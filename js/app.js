@@ -1,9 +1,42 @@
 // Main Application Logic
 
-let currentLevel = 'N5';
+let currentLevel = sessionStorage.getItem('jpapp_current_level') || 'N5';
 
 // Stores selected word indices per lesson: { [lessonId]: Set<number> }
-let selectedWordsMap = {};
+let selectedWordsMap = loadSelectedWordsFromSession();
+
+function saveSelectedWordsToSession() {
+  try {
+    const serializableMap = {};
+    for (const lessonId in selectedWordsMap) {
+      if (selectedWordsMap[lessonId] && selectedWordsMap[lessonId].size > 0) {
+        serializableMap[lessonId] = Array.from(selectedWordsMap[lessonId]);
+      }
+    }
+    sessionStorage.setItem('jpapp_selected_words', JSON.stringify(serializableMap));
+  } catch (e) {
+    console.error('Failed to save selected words to sessionStorage:', e);
+  }
+}
+
+function loadSelectedWordsFromSession() {
+  try {
+    const data = sessionStorage.getItem('jpapp_selected_words');
+    if (data) {
+      const parsed = JSON.parse(data);
+      const restoredMap = {};
+      for (const lessonId in parsed) {
+        if (Array.isArray(parsed[lessonId])) {
+          restoredMap[lessonId] = new Set(parsed[lessonId]);
+        }
+      }
+      return restoredMap;
+    }
+  } catch (e) {
+    console.error('Failed to load selected words from sessionStorage:', e);
+  }
+  return {};
+}
 
 let activeLessonForModal = null; // Stores lesson object being inspected/edited
 
@@ -77,6 +110,7 @@ function toggleLessonSelection(lesson) {
     // Select all words in this lesson
     lesson.words.forEach((_, idx) => selectedWordsMap[lesson.id].add(idx));
   }
+  saveSelectedWordsToSession();
 }
 
 function toggleWordSelection(lessonId, wordIdx) {
@@ -88,6 +122,7 @@ function toggleWordSelection(lessonId, wordIdx) {
   } else {
     selectedWordsMap[lessonId].add(wordIdx);
   }
+  saveSelectedWordsToSession();
 }
 
 /* Renderers */
@@ -210,6 +245,7 @@ function renderCustomWordsView(container) {
   // Auto select custom words if not set
   if (!selectedWordsMap['custom_lesson']) {
     selectedWordsMap['custom_lesson'] = new Set(customWords.map((_, i) => i));
+    saveSelectedWordsToSession();
   }
 }
 
@@ -246,6 +282,7 @@ function setupEventListeners() {
     const btn = e.target.closest('.level-tab-btn');
     if (!btn) return;
     currentLevel = btn.dataset.level;
+    sessionStorage.setItem('jpapp_current_level', currentLevel);
     renderLevelTabs();
     renderLessons();
   });
@@ -286,6 +323,15 @@ function setupEventListeners() {
       const idx = parseInt(e.target.dataset.index);
       customWords.splice(idx, 1);
       localStorage.setItem('jpapp_custom_words', JSON.stringify(customWords));
+      if (selectedWordsMap['custom_lesson']) {
+        const updatedSet = new Set();
+        selectedWordsMap['custom_lesson'].forEach(i => {
+          if (i < idx) updatedSet.add(i);
+          else if (i > idx) updatedSet.add(i - 1);
+        });
+        selectedWordsMap['custom_lesson'] = updatedSet;
+        saveSelectedWordsToSession();
+      }
       renderLessons();
     }
   });
@@ -299,12 +345,14 @@ function setupEventListeners() {
         if (!selectedWordsMap[l.id]) selectedWordsMap[l.id] = new Set();
         l.words.forEach((_, idx) => selectedWordsMap[l.id].add(idx));
       });
+      saveSelectedWordsToSession();
       renderLessons();
     }
   });
 
   document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
     selectedWordsMap = {};
+    saveSelectedWordsToSession();
     renderLessons();
   });
 
@@ -458,12 +506,14 @@ function renderLessonModalContent(lesson) {
   // Add event listeners inside modal
   bodyEl.querySelector('#modal-select-all-words')?.addEventListener('click', () => {
     lesson.words.forEach((_, idx) => selectedSet.add(idx));
+    saveSelectedWordsToSession();
     renderLessonModalContent(lesson);
     renderLessons();
   });
 
   bodyEl.querySelector('#modal-deselect-all-words')?.addEventListener('click', () => {
     selectedSet.clear();
+    saveSelectedWordsToSession();
     renderLessonModalContent(lesson);
     renderLessons();
   });
@@ -485,9 +535,15 @@ function renderLessonModalContent(lesson) {
       const index = parseInt(evt.target.dataset.index);
       lesson.words.splice(index, 1);
       
-      // Remove index from selected set and re-index
-      selectedSet.delete(index);
+      const updatedSet = new Set();
+      selectedSet.forEach(i => {
+        if (i < index) updatedSet.add(i);
+        else if (i > index) updatedSet.add(i - 1);
+      });
+      selectedWordsMap[lesson.id] = updatedSet;
+
       saveLessonOverride(currentLevel, lesson);
+      saveSelectedWordsToSession();
       
       renderLessonModalContent(lesson);
       renderLessons();
@@ -567,15 +623,24 @@ function handleAddWordSubmit(e) {
     selectedWordsMap[targetLessonForNewWord.id].add(newIdx);
 
     saveLessonOverride(currentLevel, targetLessonForNewWord);
+    saveSelectedWordsToSession();
     renderLessons();
     alert(`Đã thêm từ "${hiragana}" vào ${targetLessonForNewWord.title}!`);
   } else if (currentLevel === 'CUSTOM') {
     customWords.push(newWordObj);
     localStorage.setItem('jpapp_custom_words', JSON.stringify(customWords));
+    if (selectedWordsMap['custom_lesson']) {
+      selectedWordsMap['custom_lesson'].add(customWords.length - 1);
+      saveSelectedWordsToSession();
+    }
     renderLessons();
   } else {
     customWords.push(newWordObj);
     localStorage.setItem('jpapp_custom_words', JSON.stringify(customWords));
+    if (selectedWordsMap['custom_lesson']) {
+      selectedWordsMap['custom_lesson'].add(customWords.length - 1);
+      saveSelectedWordsToSession();
+    }
     renderLessons();
   }
 
