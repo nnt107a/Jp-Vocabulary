@@ -177,28 +177,30 @@ function renderCustomWordsView(container) {
     `;
   } else {
     customHtml += `
-      <table class="custom-words-table">
-        <thead>
-          <tr>
-            <th>Kanji</th>
-            <th>Hiragana / Katakana</th>
-            <th>Nghĩa Tiếng Việt</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${customWords.map((w, index) => `
+      <div class="table-responsive">
+        <table class="custom-words-table">
+          <thead>
             <tr>
-              <td class="jp-text">${w.kanji || '—'}</td>
-              <td class="jp-text">${w.hiragana}</td>
-              <td>${w.vietnamese}</td>
-              <td>
-                <button class="btn btn-danger btn-sm delete-word-btn" data-index="${index}">Xóa</button>
-              </td>
+              <th>Kanji</th>
+              <th>Hiragana / Katakana</th>
+              <th>Nghĩa Tiếng Việt</th>
+              <th>Thao tác</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${customWords.map((w, index) => `
+              <tr>
+                <td class="jp-text">${w.kanji || '—'}</td>
+                <td class="jp-text">${w.hiragana}</td>
+                <td>${w.vietnamese}</td>
+                <td>
+                  <button class="btn btn-danger btn-sm delete-word-btn" data-index="${index}">Xóa</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -418,35 +420,37 @@ function renderLessonModalContent(lesson) {
       </div>
     </div>
 
-    <table class="lesson-words-table">
-      <thead>
-        <tr>
-          <th style="width: 10%; text-align: center;">Học</th>
-          <th style="width: 25%">Kanji</th>
-          <th style="width: 35%">Hiragana / Katakana</th>
-          <th style="width: 25%">Nghĩa Tiếng Việt</th>
-          <th style="width: 5%">Xóa</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${lesson.words.map((w, index) => {
-          const isChecked = selectedSet.has(index);
-          return `
-            <tr style="cursor: pointer;" class="word-row" data-index="${index}">
-              <td style="text-align: center;">
-                <input type="checkbox" class="word-select-checkbox" data-index="${index}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;" />
-              </td>
-              <td class="jp-text" style="font-size: 1.1rem; font-weight: bold;">${w.kanji || '—'}</td>
-              <td class="jp-text" style="font-size: 1.05rem; color: var(--accent-pink);">${w.hiragana}</td>
-              <td style="color: var(--text-main);">${w.vietnamese}</td>
-              <td>
-                <button class="btn btn-danger btn-sm remove-word-from-lesson-btn" data-index="${index}" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">✕</button>
-              </td>
-            </tr>
-          `;
-        }).join('')}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="lesson-words-table">
+        <thead>
+          <tr>
+            <th style="width: 10%; text-align: center;">Học</th>
+            <th style="width: 25%">Kanji</th>
+            <th style="width: 35%">Hiragana / Katakana</th>
+            <th style="width: 25%">Nghĩa Tiếng Việt</th>
+            <th style="width: 5%">Xóa</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lesson.words.map((w, index) => {
+            const isChecked = selectedSet.has(index);
+            return `
+              <tr style="cursor: pointer;" class="word-row" data-index="${index}">
+                <td style="text-align: center;">
+                  <input type="checkbox" class="word-select-checkbox" data-index="${index}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;" />
+                </td>
+                <td class="jp-text" style="font-size: 1.1rem; font-weight: bold;">${w.kanji || '—'}</td>
+                <td class="jp-text" style="font-size: 1.05rem; color: var(--accent-pink);">${w.hiragana}</td>
+                <td style="color: var(--text-main);">${w.vietnamese}</td>
+                <td>
+                  <button class="btn btn-danger btn-sm remove-word-from-lesson-btn" data-index="${index}" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">✕</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   bodyEl.innerHTML = html;
