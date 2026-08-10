@@ -743,6 +743,13 @@ function renderCurrentCard() {
 
 function handleAnswerSubmission() {
   const input = document.getElementById('study-answer-input');
+  if (!input) return;
+
+  // Finalize IME input before checking (e.g. pending single 'n' -> 'ん')
+  if (typeof convertRomajiSmart === 'function' && studyEngine.mode === 'vn_to_jp') {
+    input.value = convertRomajiSmart(input.value, currentImeMode, true);
+  }
+
   const userAns = input.value;
   if (!userAns.trim()) return;
 
