@@ -5,51 +5,6 @@ let activeInput = null;
 let imeActive = false;
 let lastInputVal = '';
 
-const telexVowelMap = {
-  // Acute (s)
-  'á': { base: 'a', key: 's' }, 'é': { base: 'e', key: 's' }, 'í': { base: 'i', key: 's' }, 'ó': { base: 'o', key: 's' }, 'ú': { base: 'u', key: 's' }, 'ý': { base: 'y', key: 's' },
-  // Grave (f)
-  'à': { base: 'a', key: 'f' }, 'è': { base: 'e', key: 'f' }, 'ì': { base: 'i', key: 'f' }, 'ò': { base: 'o', key: 'f' }, 'ù': { base: 'u', key: 'f' }, 'ỳ': { base: 'y', key: 'f' },
-  // Hook (r)
-  'ả': { base: 'a', key: 'r' }, 'ẻ': { base: 'e', key: 'r' }, 'ỉ': { base: 'i', key: 'r' }, 'ỏ': { base: 'o', key: 'r' }, 'ủ': { base: 'u', key: 'r' }, 'ỷ': { base: 'y', key: 'r' },
-  // Tilde (x)
-  'ã': { base: 'a', key: 'x' }, 'ẽ': { base: 'e', key: 'x' }, 'ĩ': { base: 'i', key: 'x' }, 'õ': { base: 'o', key: 'x' }, 'ũ': { base: 'u', key: 'x' }, 'ỹ': { base: 'y', key: 'x' },
-  // Dot (j)
-  'ạ': { base: 'a', key: 'j' }, 'ẹ': { base: 'e', key: 'j' }, 'ị': { base: 'i', key: 'j' }, 'ọ': { base: 'o', key: 'j' }, 'ụ': { base: 'u', key: 'j' }, 'ỵ': { base: 'y', key: 'j' },
-  // Circumflex (a, e, o)
-  'â': { base: 'a', key: 'a' }, 'ê': { base: 'e', key: 'e' }, 'ô': { base: 'o', key: 'o' },
-  'ấ': { base: 'a', key: 'as' }, 'ầ': { base: 'a', key: 'af' }, 'ẩ': { base: 'a', key: 'ar' }, 'ẫ': { base: 'a', key: 'ax' }, 'ậ': { base: 'a', key: 'aj' },
-  'ế': { base: 'e', key: 'es' }, 'ề': { base: 'e', key: 'ef' }, 'ể': { base: 'e', key: 'er' }, 'ễ': { base: 'e', key: 'ex' }, 'ệ': { base: 'e', key: 'ej' },
-  'ố': { base: 'o', key: 'os' }, 'ồ': { base: 'o', key: 'of' }, 'ổ': { base: 'o', key: 'or' }, 'ỗ': { base: 'o', key: 'ox' }, 'ộ': { base: 'o', key: 'oj' },
-  // Horn/Breve (w)
-  'ă': { base: 'a', key: 'w' }, 'ơ': { base: 'o', key: 'w' }, 'ư': { base: 'u', key: 'w' },
-  'ắ': { base: 'a', key: 'ws' }, 'ằ': { base: 'a', key: 'wf' }, 'ẳ': { base: 'a', key: 'wr' }, 'ẵ': { base: 'a', key: 'wx' }, 'ặ': { base: 'a', key: 'wj' },
-  'ớ': { base: 'o', key: 'ws' }, 'ờ': { base: 'o', key: 'wf' }, 'ở': { base: 'o', key: 'wr' }, 'ỡ': { base: 'o', key: 'wx' }, 'ợ': { base: 'o', key: 'wj' },
-  'ứ': { base: 'u', key: 'ws' }, 'ừ': { base: 'u', key: 'wf' }, 'ử': { base: 'u', key: 'wr' }, 'ữ': { base: 'u', key: 'wx' }, 'ự': { base: 'u', key: 'wj' },
-  // Stroked d
-  'đ': { base: 'd', key: 'd' }
-};
-
-function demangleTelex(str, previousVal = '') {
-  if (!str) return str;
-  let res = '';
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i];
-    if (telexVowelMap[char]) {
-      const { base, key } = telexVowelMap[char];
-      // If UniKey backspaced previous Kana (e.g. て -> é), restore previous Kana + key
-      if (i === 0 && previousVal) {
-        res += previousVal + key;
-      } else {
-        res += base + key;
-      }
-    } else {
-      res += char;
-    }
-  }
-  return res.replace(/\s+/g, '');
-}
-
 function initImeBinding(inputElement, modeBadgeElement) {
   if (!inputElement) return;
 
@@ -57,14 +12,14 @@ function initImeBinding(inputElement, modeBadgeElement) {
   imeActive = true;
   lastInputVal = inputElement.value || '';
 
-  // Set input attributes to disable mobile autocorrect & Vietnamese Telex prediction
+  // Set input attributes to disable mobile autocorrect & prediction
   inputElement.setAttribute('lang', 'ja');
   inputElement.setAttribute('autocorrect', 'off');
   inputElement.setAttribute('autocapitalize', 'none');
   inputElement.setAttribute('spellcheck', 'false');
   inputElement.setAttribute('autocomplete', 'off');
 
-  // Unbind native wanakana to avoid event conflicts & DOM desync with UniKey
+  // Unbind native wanakana to avoid event conflicts & DOM desync
   if (typeof wanakana !== 'undefined') {
     try {
       wanakana.unbind(inputElement);
@@ -110,11 +65,73 @@ function unbindIme(inputElement) {
   }
 }
 
-function convertRomajiSmart(text, mode = 'hiragana', finalize = false, previousVal = '') {
+function stripVietnameseAccents(str) {
+  if (!str) return str;
+  let s = str.normalize('NFC').replace(/\s+/g, '');
+
+  // 1. Tone vowel + same vowel (UniKey outputs áa for asa, ảa for ara, ỏo for oro, óo for oso, etc.)
+  s = s.replace(/áa/g, 'asa').replace(/ée/g, 'ese').replace(/íi/g, 'isi').replace(/óo/g, 'oso').replace(/úu/g, 'usu');
+  s = s.replace(/àa/g, 'afa').replace(/èe/g, 'efe').replace(/ìi/g, 'ifi').replace(/òo/g, 'ofo').replace(/ùu/g, 'ufu');
+  s = s.replace(/ảa/g, 'ara').replace(/ẻe/g, 'ere').replace(/ỉi/g, 'iri').replace(/ỏo/g, 'oro').replace(/ủu/g, 'uru');
+  s = s.replace(/ãa/g, 'axa').replace(/ẽe/g, 'exe').replace(/ĩi/g, 'ixi').replace(/õo/g, 'oxo').replace(/ũu/g, 'uxu');
+  s = s.replace(/ạa/g, 'aja').replace(/ẹe/g, 'eje').replace(/ịi/g, 'iji').replace(/ọo/g, 'ojo').replace(/ụu/g, 'uju');
+
+  // 2. Residual Kana + UniKey Telex duplicates (e.g. あá -> as, おôt -> oto, おô -> oo)
+  s = s.replace(/あá/g, 'as').replace(/あà/g, 'af').replace(/あả/g, 'ar').replace(/あã/g, 'ax').replace(/あạ/g, 'aj');
+  s = s.replace(/えé/g, 'es').replace(/えè/g, 'ef').replace(/えẻ/g, 'er').replace(/えẽ/g, 'ex').replace(/えẹ/g, 'ej');
+  s = s.replace(/いí/g, 'is').replace(/いì/g, 'if').replace(/いỉ/g, 'ir').replace(/いĩ/g, 'ix').replace(/いị/g, 'ij');
+  s = s.replace(/おó/g, 'os').replace(/おò/g, 'of').replace(/おỏ/g, 'or').replace(/おõ/g, 'ox').replace(/おọ/g, 'oj');
+  s = s.replace(/うú/g, 'us').replace(/うù/g, 'uf').replace(/うủ/g, 'ur').replace(/うũ/g, 'ux').replace(/うụ/g, 'uj');
+
+  // Kana + circumflex/shifted word
+  s = s.replace(/お(?:ô|oô|oo)t/gi, 'oto');
+  s = s.replace(/あ(?:â|aâ|aa)t/gi, 'ata');
+  s = s.replace(/え(?:ê|eê|ee)t/gi, 'ete');
+
+  s = s.replace(/お[ôốồổỗộ]/gi, 'oo');
+  s = s.replace(/あ[âấầẩẫậ]/gi, 'aa');
+  s = s.replace(/え[êếềểễệ]/gi, 'ee');
+
+  // 3. Standard UniKey Telex shifts without preceding Kana
+  s = s.replace(/(?:oô|oo)t/gi, 'oto');
+  s = s.replace(/(?:aâ|aa)t/gi, 'ata');
+  s = s.replace(/(?:eê|ee)t/gi, 'ete');
+  s = s.replace(/ô([bcdfghjklmnpqrstvwxyz])/gi, 'o$1o');
+  s = s.replace(/â([bcdfghjklmnpqrstvwxyz])/gi, 'a$1a');
+  s = s.replace(/ê([bcdfghjklmnpqrstvwxyz])/gi, 'e$1e');
+
+  // 4. Tone mark mappings (single characters)
+  s = s.replace(/ấ/g, 'aas').replace(/ầ/g, 'aaf').replace(/ẩ/g, 'aar').replace(/ẫ/g, 'aax').replace(/ậ/g, 'aaj');
+  s = s.replace(/ế/g, 'ees').replace(/ề/g, 'eef').replace(/ể/g, 'eer').replace(/ễ/g, 'eex').replace(/ệ/g, 'eej');
+  s = s.replace(/ố/g, 'oos').replace(/ồ/g, 'oof').replace(/ổ/g, 'oor').replace(/ỗ/g, 'oox').replace(/ộ/g, 'ooj');
+
+  s = s.replace(/ắ/g, 'aws').replace(/ằ/g, 'awf').replace(/ẳ/g, 'awr').replace(/ẵ/g, 'awx').replace(/ặ/g, 'awj');
+  s = s.replace(/ớ/g, 'ows').replace(/ờ/g, 'owf').replace(/ở/g, 'owr').replace(/ỡ/g, 'owx').replace(/ợ/g, 'owj');
+  s = s.replace(/ứ/g, 'uws').replace(/ừ/g, 'uwf').replace(/ử/g, 'uwr').replace(/ữ/g, 'uwx').replace(/ự/g, 'uwj');
+
+  s = s.replace(/á/g, 'as').replace(/à/g, 'af').replace(/ả/g, 'ar').replace(/ã/g, 'ax').replace(/ạ/g, 'aj');
+  s = s.replace(/é/g, 'es').replace(/è/g, 'ef').replace(/ẻ/g, 'er').replace(/ẽ/g, 'ex').replace(/ẹ/g, 'ej');
+  s = s.replace(/í/g, 'is').replace(/ì/g, 'if').replace(/ỉ/g, 'ir').replace(/ĩ/g, 'ix').replace(/ị/g, 'ij');
+  s = s.replace(/ó/g, 'os').replace(/ò/g, 'of').replace(/ỏ/g, 'or').replace(/õ/g, 'ox').replace(/ọ/g, 'oj');
+  s = s.replace(/ú/g, 'us').replace(/ù/g, 'uf').replace(/ủ/g, 'ur').replace(/ũ/g, 'ux').replace(/ũ/g, 'uj');
+  s = s.replace(/ý/g, 'ys').replace(/ỳ/g, 'yf').replace(/ỷ/g, 'yr').replace(/ỹ/g, 'yx').replace(/ỵ/g, 'yj');
+
+  // 5. Standalone circumflex, horn, breve, stroke
+  s = s.replace(/ô/g, 'oo').replace(/â/g, 'aa').replace(/ê/g, 'ee');
+  s = s.replace(/ơ/g, 'o').replace(/ư/g, 'u').replace(/ă/g, 'a');
+  s = s.replace(/đ/g, 'd').replace(/Đ/g, 'D');
+
+  // 6. Strip any residual unhandled diacritics
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  return s;
+}
+
+function convertRomajiSmart(text, mode = 'hiragana', finalize = false) {
   if (!text || typeof wanakana === 'undefined') return text;
 
-  // Demangle any accidental spaces or UniKey Telex accents
-  let cleanText = demangleTelex(text, previousVal);
+  // Clean spaces and demangle Telex
+  const cleanText = stripVietnameseAccents(text);
   const converter = mode === 'katakana' ? wanakana.toKatakana : wanakana.toHiragana;
 
   if (finalize) {
@@ -124,13 +141,23 @@ function convertRomajiSmart(text, mode = 'hiragana', finalize = false, previousV
   // If text ends with a single trailing 'n' or 'N' (and not 'nn' or "n'"), keep the 'n' pending
   const endsWithSingleN = /[a-zA-Z]?[nN]$/.test(cleanText) && !/[nN]{2}$/.test(cleanText) && !/[nN]'$/.test(cleanText);
 
+  let result = '';
   if (endsWithSingleN) {
     const mainPart = cleanText.slice(0, -1);
     const lastChar = cleanText.slice(-1);
-    return converter(mainPart) + lastChar;
+    result = converter(mainPart) + lastChar;
   } else {
-    return converter(cleanText);
+    result = converter(cleanText);
   }
+
+  // Auto-append a space ' ' after any pending Romaji consonant (e.g. s, t, k, g, r, p, b, d, z, h, f, n)
+  // so UniKey immediately commits & resets its internal OS Telex state buffer.
+  const endsWithPendingConsonant = /[bcdfghjklmnpqrstvwxyz]$/i.test(result);
+  if (endsWithPendingConsonant) {
+    return result + ' ';
+  }
+
+  return result;
 }
 
 function handleImeInput(e) {
@@ -143,7 +170,7 @@ function handleImeInput(e) {
     return;
   }
 
-  const converted = convertRomajiSmart(val, currentImeMode, false, lastInputVal);
+  const converted = convertRomajiSmart(val, currentImeMode, false);
 
   if (converted !== val) {
     input.value = converted;
@@ -156,7 +183,7 @@ function handleImeBlur(e) {
   if (!imeActive || typeof wanakana === 'undefined') return;
   const input = e.target;
   if (input && input.value) {
-    input.value = convertRomajiSmart(input.value, currentImeMode, true, lastInputVal);
+    input.value = convertRomajiSmart(input.value, currentImeMode, true);
     lastInputVal = input.value;
   }
 }
@@ -169,7 +196,7 @@ function handleImeKeydown(e) {
     e.preventDefault();
     const input = e.target;
     if (input && input.value) {
-      input.value = convertRomajiSmart(input.value, currentImeMode, true, lastInputVal);
+      input.value = convertRomajiSmart(input.value, currentImeMode, true);
       lastInputVal = input.value;
       input.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -189,6 +216,7 @@ function handleImeKeydown(e) {
     if (smallKana) {
       e.preventDefault();
       insertTextAtCursor(e.target, smallKana);
+      return;
     }
   }
 }
