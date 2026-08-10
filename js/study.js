@@ -20,6 +20,21 @@ function normalizeVietnamese(text) {
   return str.replace(/\s+/g, ' ').trim();
 }
 
+function normalizeJapanese(text) {
+  if (!text) return '';
+  // 1. Unicode NFC Normalization (crucial for voiced/semi-voiced Kana like べ, ぷ, ば, ぼ, が)
+  let str = text.normalize('NFC').trim().toLowerCase();
+
+  // 2. Remove all spaces (including full-width Japanese space U+3000)
+  str = str.replace(/[\s\u3000]+/g, '');
+
+  // 3. Convert Romaji / Katakana to Hiragana if WanaKana is available
+  if (typeof wanakana !== 'undefined') {
+    str = wanakana.toHiragana(str);
+  }
+  return str.normalize('NFC');
+}
+
 class StudyEngine {
   constructor() {
     this.wordsList = [];
@@ -100,13 +115,28 @@ class StudyEngine {
       return meanings.some(m => inputClean === m || inputClean.includes(m) || m.includes(inputClean));
     } else {
       // VN -> JP mode
-      const inputRaw = userInput.trim().toLowerCase().replace(/\s+/g, '');
-      const hiraClean = word.hiragana.trim().toLowerCase().replace(/\s+/g, '');
-      const kanjiClean = word.kanji ? word.kanji.trim().toLowerCase().replace(/\s+/g, '') : '';
-      
-      const inputKana = (typeof wanakana !== 'undefined') ? wanakana.toHiragana(inputRaw).replace(/\s+/g, '') : inputRaw;
+      const inputClean = normalizeJapanese(userInput);
+      if (!inputClean) return false;
 
-      return inputKana === hiraClean || inputRaw === hiraClean || (kanjiClean && (inputKana === kanjiClean || inputRaw === kanjiClean));
+      // Extract all acceptable Japanese answers (hiragana & kanji, split by delimiters)
+      const rawOptions = [];
+      if (word.hiragana) {
+        word.hiragana.split(/[/,;\(\)]/).forEach(opt => rawOptions.push(opt));
+        rawOptions.push(word.hiragana);
+      }
+      if (word.kanji) {
+        word.kanji.split(/[/,;\(\)]/).forEach(opt => rawOptions.push(opt));
+        rawOptions.push(word.kanji);
+      }
+
+      // Also compare raw input without wanakana conversion in case of direct Kanji match
+      const inputRawClean = userInput.normalize('NFC').trim().toLowerCase().replace(/[\s\u3000]+/g, '');
+
+      return rawOptions.some(opt => {
+        const optNormalized = normalizeJapanese(opt);
+        const optRawClean = opt.normalize('NFC').trim().toLowerCase().replace(/[\s\u3000]+/g, '');
+        return (optNormalized && optNormalized === inputClean) || (optRawClean && optRawClean === inputRawClean);
+      });
     }
   }
 
