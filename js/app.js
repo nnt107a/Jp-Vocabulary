@@ -1,6 +1,48 @@
 // Main Application Logic
 
-let currentLevel = sessionStorage.getItem('jpapp_current_level') || 'N5';
+// Helper for multi-layer persistent storage (localStorage -> sessionStorage -> 365-day Cookie)
+function setCookie(name, value, days = 365) {
+  try {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + d.toUTCString();
+    document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/;SameSite=Lax";
+  } catch (e) {}
+}
+
+function getCookie(name) {
+  try {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i].trim();
+      if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length));
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveStateToStorage(key, valueStr) {
+  try { localStorage.setItem(key, valueStr); } catch (e) {}
+  try { sessionStorage.setItem(key, valueStr); } catch (e) {}
+  setCookie(key, valueStr, 365);
+}
+
+function loadStateFromStorage(key) {
+  try {
+    const val = localStorage.getItem(key);
+    if (val !== null) return val;
+  } catch (e) {}
+  try {
+    const val = sessionStorage.getItem(key);
+    if (val !== null) return val;
+  } catch (e) {}
+  const cookieVal = getCookie(key);
+  if (cookieVal !== null) return cookieVal;
+  return null;
+}
+
+let currentLevel = loadStateFromStorage('jpapp_current_level') || 'N5';
 
 // Stores selected word indices per lesson: { [lessonId]: Set<number> }
 let selectedWordsMap = loadSelectedWordsFromSession();
@@ -13,15 +55,15 @@ function saveSelectedWordsToSession() {
         serializableMap[lessonId] = Array.from(selectedWordsMap[lessonId]);
       }
     }
-    sessionStorage.setItem('jpapp_selected_words', JSON.stringify(serializableMap));
+    saveStateToStorage('jpapp_selected_words', JSON.stringify(serializableMap));
   } catch (e) {
-    console.error('Failed to save selected words to sessionStorage:', e);
+    console.error('Failed to save selected words:', e);
   }
 }
 
 function loadSelectedWordsFromSession() {
   try {
-    const data = sessionStorage.getItem('jpapp_selected_words');
+    const data = loadStateFromStorage('jpapp_selected_words');
     if (data) {
       const parsed = JSON.parse(data);
       const restoredMap = {};
@@ -33,7 +75,7 @@ function loadSelectedWordsFromSession() {
       return restoredMap;
     }
   } catch (e) {
-    console.error('Failed to load selected words from sessionStorage:', e);
+    console.error('Failed to load selected words:', e);
   }
   return {};
 }
@@ -282,7 +324,7 @@ function setupEventListeners() {
     const btn = e.target.closest('.level-tab-btn');
     if (!btn) return;
     currentLevel = btn.dataset.level;
-    sessionStorage.setItem('jpapp_current_level', currentLevel);
+    saveStateToStorage('jpapp_current_level', currentLevel);
     renderLevelTabs();
     renderLessons();
   });
