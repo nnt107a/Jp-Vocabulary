@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nhật Ngữ Đông Du — Học Từ Vựng N5 - N1</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- WanaKana Romaji to Kana Converter -->
+  <script src="https://unpkg.com/wanakana"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🌸</span>
+      <span>Đông Du Vocab</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn active" id="nav-learn-btn">Học từ vựng</button>
+      <button class="nav-btn" id="btn-open-custom-modal">+ Thêm từ mới</button>
+      <button class="nav-btn" id="btn-export-data" title="Tải về file data.js cập nhật để chia sẻ với bạn bè">📥 Xuất file data.js</button>
+    </div>
+  </header>
+
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- VIEW 1: LESSON PICKER & LEVEL SELECTOR -->
+    <section id="lesson-picker-view">
+      
+      <!-- Level Tabs -->
+      <div class="level-tabs" id="level-tabs">
+        <!-- Rendered dynamically via JS -->
+      </div>
+
+      <!-- Controls & Mode Selector -->
+      <div class="controls-bar">
+        <div class="lesson-actions">
+          <button class="btn btn-secondary" id="btn-select-all">Chọn tất cả</button>
+          <button class="btn btn-secondary" id="btn-deselect-all">Bỏ chọn</button>
+          <span style="font-size: 0.9rem; color: var(--text-muted); margin-left: 0.5rem;" id="selected-count">
+            Đã chọn: 0 bài (0 từ)
+          </span>
+        </div>
+
+        <div class="mode-selector">
+          <label for="study-mode-select">Chế độ luyện tập:</label>
+          <select id="study-mode-select" class="mode-select-dropdown">
+            <option value="jp_to_vn">🇯🇵 Cho Tiếng Nhật ➔ Nhập Tiếng Việt</option>
+            <option value="vn_to_jp">🇻🇳 Cho Tiếng Việt ➔ Nhập Tiếng Nhật</option>
+          </select>
+          <button class="btn btn-primary" id="btn-start-study">🚀 Bắt đầu học</button>
+        </div>
+
+      </div>
+
+      <!-- Lessons Grid -->
+      <div class="lessons-grid" id="lessons-grid">
+        <!-- Lesson Cards Rendered via JS -->
+      </div>
+
+    </section>
+
+    <!-- VIEW 2: STUDY / FLASHCARD QUIZ -->
+    <section id="study-view" class="hidden">
+      <div class="study-container">
+        
+        <div class="study-header">
+          <button class="btn btn-secondary" id="btn-exit-study">← Quay lại danh sách</button>
+          <span style="font-weight: 600; color: var(--accent-pink);" id="study-progress-text">Câu 1 / 10</span>
+        </div>
+
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+
+        <!-- Flashcard Display -->
+        <div class="flashcard">
+          <div class="card-prompt-label" id="card-prompt-label">Tiếng Việt 🇻🇳</div>
+          <div class="card-prompt-text" id="card-prompt-text">Tôi</div>
+          <div class="card-prompt-sub" id="card-prompt-sub">Dịch sang tiếng Nhật</div>
+
+          <!-- Answer Section -->
+          <div class="answer-section" id="answer-section-inputs">
+            <div class="input-group">
+              <input type="text" class="study-input" id="study-answer-input" placeholder="Nhập câu trả lời..." autocomplete="off" />
+              <button class="ime-indicator" id="study-ime-toggle" title="Đổi chế độ gõ Hiragana / Katakana">
+                <span id="study-ime-badge">あ (Hiragana)</span>
+              </button>
+            </div>
+
+            <!-- Small Kana Quick Buttons -->
+            <div id="small-kana-toolbar" style="display: flex; gap: 0.4rem; justify-content: center; align-items: center; margin-top: 0.2rem; flex-wrap: wrap;">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Chữ nhỏ (Giữ Shift + T/Y/U/O hoặc chèn nhanh):</span>
+              <button type="button" class="btn btn-secondary btn-sm kana-tool-btn" data-kana="っ" style="padding: 0.2rem 0.5rem; font-size: 0.9rem;">っ</button>
+              <button type="button" class="btn btn-secondary btn-sm kana-tool-btn" data-kana="ゃ" style="padding: 0.2rem 0.5rem; font-size: 0.9rem;">ゃ</button>
+              <button type="button" class="btn btn-secondary btn-sm kana-tool-btn" data-kana="ゅ" style="padding: 0.2rem 0.5rem; font-size: 0.9rem;">ゅ</button>
+              <button type="button" class="btn btn-secondary btn-sm kana-tool-btn" data-kana="ょ" style="padding: 0.2rem 0.5rem; font-size: 0.9rem;">ょ</button>
+              <button type="button" class="btn btn-secondary btn-sm kana-tool-btn" data-kana="ー" style="padding: 0.2rem 0.5rem; font-size: 0.9rem;">ー</button>
+            </div>
+
+            <div id="feedback-message" class="hidden" style="margin-top: 0.5rem;"></div>
+
+
+            <!-- Revealed Answer Box -->
+            <div class="revealed-answer" id="revealed-answer-box">
+              <div class="revealed-main" id="revealed-main">わたし</div>
+              <div class="revealed-sub" id="revealed-sub">Kanji: 私</div>
+            </div>
+
+            <div class="action-buttons-row" style="margin-top: 1rem;">
+              <button class="btn btn-primary" id="btn-submit-answer">Kiểm tra</button>
+              <button class="btn btn-secondary" id="btn-show-answer">Xem đáp án</button>
+              <button class="btn btn-primary hidden" id="btn-next-word">Từ tiếp theo ➔</button>
+            </div>
+          </div>
+
+          <!-- Summary Actions (Hidden by default) -->
+          <div id="study-summary-actions" class="hidden" style="margin-top: 1.5rem;">
+            <button class="btn btn-primary" onclick="startStudySession()">🔄 Luyện tập lại</button>
+            <button class="btn btn-secondary" onclick="exitStudySession()" style="margin-left: 0.75rem;">📋 Chọn bài học khác</button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: LESSON WORD LIST & ADD WORD TO LESSON -->
+  <div class="modal-overlay" id="lesson-words-modal">
+    <div class="modal-content" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="lesson-modal-title">Danh sách từ vựng</h3>
+          <span style="font-size: 0.85rem; color: var(--text-muted);" id="lesson-modal-sub">Chi tiết bài học</span>
+        </div>
+        <button class="modal-close" id="lesson-modal-close">&times;</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; margin-bottom: 1rem;" id="lesson-modal-body">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+        <button class="btn btn-primary" id="btn-add-word-to-lesson">+ Thêm từ mới vào bài này</button>
+        <button class="btn btn-secondary" id="lesson-modal-done">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CUSTOM WORD -->
+
+  <div class="modal-overlay" id="custom-word-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Thêm từ vựng mới ⭐</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+
+      <form id="form-add-word">
+        <div class="form-group">
+          <label for="custom-kanji">Chữ Hán / Kanji (không bắt buộc):</label>
+          <input type="text" id="custom-kanji" class="form-control jp-text" placeholder="Ví dụ: 学生" />
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label for="custom-hiragana">Phiên âm Hiragana / Katakana (bắt buộc):</label>
+            <button type="button" class="btn btn-secondary btn-sm" id="ime-toggle-btn" style="padding: 0.1rem 0.4rem; font-size: 0.75rem;">
+              Chế độ: <span id="custom-ime-badge">あ (Hiragana)</span>
+            </button>
+          </div>
+          <input type="text" id="custom-hiragana" class="form-control jp-text" placeholder="Ví dụ: がくせい (Gõ Romaji tự đổi thành Kana)" required />
+        </div>
+
+        <div class="form-group">
+          <label for="custom-vietnamese">Nghĩa tiếng Việt (bắt buộc):</label>
+          <input type="text" id="custom-vietnamese" class="form-control" placeholder="Ví dụ: Học sinh" required />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" id="modal-cancel">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu từ vựng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/ime.js"></script>
+  <script src="js/study.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
