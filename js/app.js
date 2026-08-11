@@ -237,6 +237,13 @@ function renderLessons() {
     const status = getLessonSelectionStatus(lesson);
     const selectedCount = selectedWordsMap[lesson.id] ? selectedWordsMap[lesson.id].size : 0;
     
+    let graduatedCount = 0;
+    if (typeof srsEngine !== 'undefined') {
+      lesson.words.forEach(w => {
+        if (srsEngine.getCardState(w, lesson.id).graduated) graduatedCount++;
+      });
+    }
+
     let cardClass = 'lesson-card';
     let statusText = 'Chọn bài này';
     if (status === 'full') {
@@ -247,11 +254,18 @@ function renderLessons() {
       statusText = `Đã chọn ${selectedCount}/${lesson.words.length}`;
     }
 
+    const gradBadge = graduatedCount > 0 
+      ? `<span class="graduated-badge" style="font-size: 0.75rem; background: rgba(56, 239, 125, 0.15); color: #38ef7d; border: 1px solid rgba(56, 239, 125, 0.3); padding: 0.15rem 0.5rem; border-radius: 12px; font-weight: 500;" title="${graduatedCount}/${lesson.words.length} từ đã học (tốt nghiệp SRS)">✓ Đã học ${graduatedCount}/${lesson.words.length}</span>` 
+      : '';
+
     return `
       <div class="${cardClass}" data-id="${lesson.id}">
         <div class="card-header">
           <div class="lesson-title">${lesson.title}</div>
-          <span class="word-count-badge">${selectedCount > 0 && status !== 'full' ? `${selectedCount}/` : ''}${lesson.words.length} từ</span>
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            ${gradBadge}
+            <span class="word-count-badge">${selectedCount > 0 && status !== 'full' ? `${selectedCount}/` : ''}${lesson.words.length} từ</span>
+          </div>
         </div>
         <div class="lesson-description">${lesson.description}</div>
         
@@ -582,16 +596,22 @@ function renderLessonModalContent(lesson) {
       <table class="lesson-words-table">
         <thead>
           <tr>
-            <th style="width: 10%; text-align: center;">Học</th>
-            <th style="width: 25%">Kanji</th>
-            <th style="width: 35%">Hiragana / Katakana</th>
+            <th style="width: 8%; text-align: center;">Học</th>
+            <th style="width: 22%">Kanji</th>
+            <th style="width: 30%">Hiragana / Katakana</th>
             <th style="width: 25%">Nghĩa Tiếng Việt</th>
+            <th style="width: 10%; text-align: center;">Trạng thái</th>
             <th style="width: 5%">Xóa</th>
           </tr>
         </thead>
         <tbody>
           ${lesson.words.map((w, index) => {
             const isChecked = selectedSet.has(index);
+            const isGraduated = typeof srsEngine !== 'undefined' && srsEngine.getCardState(w, lesson.id).graduated;
+            const statusTag = isGraduated 
+              ? `<span style="font-size: 0.75rem; color: #38ef7d; background: rgba(56, 239, 125, 0.12); border: 1px solid rgba(56, 239, 125, 0.3); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 500;">✓ Đã học</span>`
+              : `<span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px;">Từ mới</span>`;
+
             return `
               <tr style="cursor: pointer;" class="word-row" data-index="${index}">
                 <td style="text-align: center;">
@@ -600,6 +620,7 @@ function renderLessonModalContent(lesson) {
                 <td class="jp-text" style="font-size: 1.1rem; font-weight: bold;">${w.kanji || '—'}</td>
                 <td class="jp-text" style="font-size: 1.05rem; color: var(--accent-pink);">${w.hiragana}</td>
                 <td style="color: var(--text-main);">${w.vietnamese}</td>
+                <td style="text-align: center;">${statusTag}</td>
                 <td>
                   <button class="btn btn-danger btn-sm remove-word-from-lesson-btn" data-index="${index}" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">✕</button>
                 </td>
@@ -784,6 +805,22 @@ function startStudySession() {
   }
 
   const studyMode = document.getElementById('study-mode-select').value;
+
+  if (studyMode === 'new_lesson_pipeline') {
+    const unlearnedWords = targetWords.filter(item => {
+      if (typeof srsEngine === 'undefined') return true;
+      const state = srsEngine.getCardState(item.word, item.lessonId);
+      return !state.graduated;
+    });
+
+    if (unlearnedWords.length === 0) {
+      alert('🎉 Bạn đã tốt nghiệp tất cả các từ mới trong các bài đã chọn!\n\nHệ thống đã tự động bỏ qua các từ đã học để tránh học lặp lại.\nĐể ôn lại các từ này, hãy dùng nút "🔥 Ôn tập hôm nay" ở góc trên hoặc chọn các chế độ Luyện tập / Trắc nghiệm nhé.');
+      return;
+    }
+
+    targetWords = unlearnedWords;
+  }
+
   studyEngine.startSession(targetWords, studyMode);
 
   launchStudyView(studyMode);
