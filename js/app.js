@@ -1,6 +1,6 @@
 // Main Application Logic
 
-// Helper for multi-layer persistent storage (localStorage -> sessionStorage -> 365-day Cookie)
+// Multi-layer persistent storage (localStorage -> sessionStorage -> 365-day Cookie)
 function setCookie(name, value, days = 365) {
   try {
     const d = new Date();
@@ -43,8 +43,6 @@ function loadStateFromStorage(key) {
 }
 
 let currentLevel = loadStateFromStorage('jpapp_current_level') || 'N5';
-
-// Stores selected word indices per lesson: { [lessonId]: Set<number> }
 let selectedWordsMap = loadSelectedWordsFromSession();
 
 function saveSelectedWordsToSession() {
@@ -80,9 +78,7 @@ function loadSelectedWordsFromSession() {
   return {};
 }
 
-let activeLessonForModal = null; // Stores lesson object being inspected/edited
-
-// Load custom words & overrides from localStorage
+let activeLessonForModal = null;
 let customWords = JSON.parse(localStorage.getItem('jpapp_custom_words') || '[]');
 let vocabOverrides = JSON.parse(localStorage.getItem('jpapp_vocab_overrides') || '{}');
 
@@ -103,7 +99,6 @@ function applyVocabOverrides() {
     }
   });
 
-  // Ensure N5 Kanji fields are cleared for pure Hiragana / Katakana
   if (VOCAB_DATA.N5) {
     VOCAB_DATA.N5.lessons.forEach(lesson => {
       lesson.words.forEach(word => {
@@ -117,6 +112,33 @@ function saveVocabOverrides() {
   localStorage.setItem('jpapp_vocab_overrides', JSON.stringify(vocabOverrides));
 }
 
+// Gather all global words across N5-N1 and CUSTOM for distractors and SRS review
+function getAllGlobalWordsWithMeta() {
+  const list = [];
+  const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
+  
+  levels.forEach(lvl => {
+    const lvlData = VOCAB_DATA[lvl];
+    if (lvlData && lvlData.lessons) {
+      lvlData.lessons.forEach(lesson => {
+        lesson.words.forEach(w => {
+          list.push({ word: w, lessonId: lesson.id, level: lvl });
+        });
+      });
+    }
+  });
+
+  customWords.forEach(w => {
+    list.push({ word: w, lessonId: 'custom_lesson', level: 'CUSTOM' });
+  });
+
+  return list;
+}
+
+function getAllGlobalWords() {
+  return getAllGlobalWordsWithMeta().map(item => item.word);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
@@ -125,6 +147,21 @@ function initApp() {
   renderLevelTabs();
   renderLessons();
   setupEventListeners();
+  updateSrsHeaderBadges();
+}
+
+function updateSrsHeaderBadges() {
+  if (typeof srsEngine === 'undefined') return;
+
+  const allWords = getAllGlobalWordsWithMeta();
+  const dueCards = srsEngine.getDueCards(allWords);
+  const weakCards = srsEngine.getWeakCards(allWords);
+
+  const srsBadge = document.getElementById('srs-due-badge');
+  const weakBadge = document.getElementById('weak-words-badge');
+
+  if (srsBadge) srsBadge.textContent = dueCards.length;
+  if (weakBadge) weakBadge.textContent = weakCards.length;
 }
 
 /* Lesson Selection Status Helpers */
@@ -146,10 +183,8 @@ function toggleLessonSelection(lesson) {
   }
 
   if (status === 'full') {
-    // Deselect all
     selectedWordsMap[lesson.id].clear();
   } else {
-    // Select all words in this lesson
     lesson.words.forEach((_, idx) => selectedWordsMap[lesson.id].add(idx));
   }
   saveSelectedWordsToSession();
@@ -284,7 +319,6 @@ function renderCustomWordsView(container) {
   customHtml += `</div>`;
   container.innerHTML = customHtml;
 
-  // Auto select custom words if not set
   if (!selectedWordsMap['custom_lesson']) {
     selectedWordsMap['custom_lesson'] = new Set(customWords.map((_, i) => i));
     saveSelectedWordsToSession();
@@ -319,8 +353,8 @@ function updateSelectedCount() {
 
 /* Event Listeners */
 function setupEventListeners() {
-  // Level Tab Clicks
-  document.getElementById('level-tabs').addEventListener('click', (e) => {
+  // Level Tabs
+  document.getElementById('level-tabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.level-tab-btn');
     if (!btn) return;
     currentLevel = btn.dataset.level;
@@ -329,9 +363,43 @@ function setupEventListeners() {
     renderLessons();
   });
 
+  // SRS Header Buttons
+  document.getElementById('btn-srs-review')?.addEventListener('click', () => {
+    const allWords = getAllGlobalWordsWithMeta();
+    const dueCards = srsEngine.getDueCards(allWords);
+
+    if (dueCards.length === 0) {
+      alert('🎉 Tuyệt vời! Hiện tại không có từ nào đến hạn ôn tập hôm nay.');
+      return;
+    }
+
+    studyEngine.startSession(dueCards, 'srs_review');
+    launchStudyView('srs_review');
+  });
+
+  document.getElementById('btn-weak-words')?.addEventListener('click', () => {
+    const allWords = getAllGlobalWordsWithMeta();
+    const weakCards = srsEngine.getWeakCards(allWords);
+
+    if (weakCards.length === 0) {
+      alert('🌟 Xuất sắc! Hiện tại bạn không có từ vựng yếu hay bị làm sai.');
+      return;
+    }
+
+    studyEngine.startSession(weakCards, 'weak_words');
+    launchStudyView('weak_words');
+  });
+
+  // TTS Play Speaker Button
+  document.getElementById('btn-tts-speaker')?.addEventListener('click', () => {
+    const word = studyEngine.getCurrentWord();
+    if (word && word.hiragana) {
+      speakJapanese(word.hiragana);
+    }
+  });
+
   // Lesson Grid interactions
-  document.getElementById('lessons-grid').addEventListener('click', (e) => {
-    // Check if "Xem & Chọn từ" button clicked
+  document.getElementById('lessons-grid')?.addEventListener('click', (e) => {
     const viewBtn = e.target.closest('.view-words-btn');
     if (viewBtn) {
       e.stopPropagation();
@@ -340,7 +408,6 @@ function setupEventListeners() {
       return;
     }
 
-    // Toggle card selection
     const card = e.target.closest('.lesson-card');
     if (card) {
       const lessonId = card.dataset.id;
@@ -355,12 +422,10 @@ function setupEventListeners() {
       return;
     }
 
-    // Modal buttons inside custom view
     if (e.target.id === 'open-add-word-modal' || e.target.id === 'open-add-word-modal-empty') {
       openAddWordModal(null);
     }
 
-    // Delete custom word
     if (e.target.classList.contains('delete-word-btn')) {
       const idx = parseInt(e.target.dataset.index);
       customWords.splice(idx, 1);
@@ -375,6 +440,7 @@ function setupEventListeners() {
         saveSelectedWordsToSession();
       }
       renderLessons();
+      updateSrsHeaderBadges();
     }
   });
 
@@ -398,16 +464,16 @@ function setupEventListeners() {
     renderLessons();
   });
 
-  // Study Button
+  // Start Study Button
   document.getElementById('btn-start-study')?.addEventListener('click', startStudySession);
 
-  // Add Custom / Lesson Word Modal Triggers
+  // Custom Word Modal Controls
   document.getElementById('btn-open-custom-modal')?.addEventListener('click', () => openAddWordModal(null));
   document.getElementById('modal-close')?.addEventListener('click', closeAddWordModal);
   document.getElementById('modal-cancel')?.addEventListener('click', closeAddWordModal);
   document.getElementById('form-add-word')?.addEventListener('submit', handleAddWordSubmit);
 
-  // Lesson detail modal listeners
+  // Lesson Detail Modal Controls
   document.getElementById('lesson-modal-close')?.addEventListener('click', closeLessonWordsModal);
   document.getElementById('lesson-modal-done')?.addEventListener('click', closeLessonWordsModal);
   document.getElementById('btn-add-word-to-lesson')?.addEventListener('click', () => {
@@ -416,10 +482,10 @@ function setupEventListeners() {
     openAddWordModal(lesson);
   });
 
-  // Export Data JS button
+  // Export Data Button
   document.getElementById('btn-export-data')?.addEventListener('click', exportDataJs);
 
-  // IME mode toggle button for custom word form
+  // IME Toggle
   document.getElementById('ime-toggle-btn')?.addEventListener('click', () => {
     const currentMode = currentImeMode === 'hiragana' ? 'katakana' : 'hiragana';
     const input = document.getElementById('custom-hiragana');
@@ -427,7 +493,6 @@ function setupEventListeners() {
     setImeMode(currentMode, input, badge);
   });
 
-  // Study view IME mode toggle
   document.getElementById('study-ime-toggle')?.addEventListener('click', () => {
     const currentMode = currentImeMode === 'hiragana' ? 'katakana' : 'hiragana';
     const input = document.getElementById('study-answer-input');
@@ -435,7 +500,7 @@ function setupEventListeners() {
     setImeMode(currentMode, input, badge);
   });
 
-  // Small Kana toolbar buttons
+  // Kana Toolbar Buttons
   document.getElementById('small-kana-toolbar')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.kana-tool-btn');
     if (!btn) return;
@@ -447,14 +512,17 @@ function setupEventListeners() {
     }
   });
 
-  // Study View Controls
+  // Study Controls
   document.getElementById('btn-submit-answer')?.addEventListener('click', handleAnswerSubmission);
   document.getElementById('btn-show-answer')?.addEventListener('click', handleShowAnswer);
   document.getElementById('btn-next-word')?.addEventListener('click', handleNextWord);
   document.getElementById('btn-exit-study')?.addEventListener('click', exitStudySession);
+  document.getElementById('btn-preview-next')?.addEventListener('click', handleNextWord);
 
+  document.getElementById('btn-summary-restart')?.addEventListener('click', startStudySession);
+  document.getElementById('btn-summary-exit')?.addEventListener('click', exitStudySession);
 
-  // Enter key inside study input
+  // Enter Key Handler
   document.getElementById('study-answer-input')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       if (studyEngine.isAnswerRevealed) {
@@ -466,7 +534,7 @@ function setupEventListeners() {
   });
 }
 
-/* Lesson Words Modal (Word Preview, Inspection & Granular Selection) */
+/* Lesson Words Modal */
 function openLessonWordsModal(lessonId) {
   const levelData = VOCAB_DATA[currentLevel];
   if (!levelData) return;
@@ -545,7 +613,6 @@ function renderLessonModalContent(lesson) {
 
   bodyEl.innerHTML = html;
 
-  // Add event listeners inside modal
   bodyEl.querySelector('#modal-select-all-words')?.addEventListener('click', () => {
     lesson.words.forEach((_, idx) => selectedSet.add(idx));
     saveSelectedWordsToSession();
@@ -560,7 +627,6 @@ function renderLessonModalContent(lesson) {
     renderLessons();
   });
 
-  // Checkbox toggle
   bodyEl.querySelectorAll('.word-select-checkbox').forEach(chk => {
     chk.addEventListener('change', (evt) => {
       const idx = parseInt(evt.target.dataset.index);
@@ -570,7 +636,6 @@ function renderLessonModalContent(lesson) {
     });
   });
 
-  // Inline Delete button
   bodyEl.querySelectorAll('.remove-word-from-lesson-btn').forEach(btn => {
     btn.addEventListener('click', (evt) => {
       evt.stopPropagation();
@@ -586,9 +651,9 @@ function renderLessonModalContent(lesson) {
 
       saveLessonOverride(currentLevel, lesson);
       saveSelectedWordsToSession();
-      
       renderLessonModalContent(lesson);
       renderLessons();
+      updateSrsHeaderBadges();
     });
   });
 }
@@ -598,7 +663,6 @@ function closeLessonWordsModal() {
   modal.classList.remove('active');
 }
 
-/* Save Lesson Override to LocalStorage */
 function saveLessonOverride(level, lesson) {
   if (!vocabOverrides[level]) {
     vocabOverrides[level] = [];
@@ -612,7 +676,7 @@ function saveLessonOverride(level, lesson) {
   saveVocabOverrides();
 }
 
-/* Add Word Modal Functions */
+/* Custom Word Modal */
 let targetLessonForNewWord = null;
 
 function openAddWordModal(targetLesson = null) {
@@ -656,8 +720,6 @@ function handleAddWordSubmit(e) {
 
   if (targetLessonForNewWord) {
     targetLessonForNewWord.words.push(newWordObj);
-    
-    // Auto select newly added word
     const newIdx = targetLessonForNewWord.words.length - 1;
     if (!selectedWordsMap[targetLessonForNewWord.id]) {
       selectedWordsMap[targetLessonForNewWord.id] = new Set();
@@ -668,14 +730,6 @@ function handleAddWordSubmit(e) {
     saveSelectedWordsToSession();
     renderLessons();
     alert(`Đã thêm từ "${hiragana}" vào ${targetLessonForNewWord.title}!`);
-  } else if (currentLevel === 'CUSTOM') {
-    customWords.push(newWordObj);
-    localStorage.setItem('jpapp_custom_words', JSON.stringify(customWords));
-    if (selectedWordsMap['custom_lesson']) {
-      selectedWordsMap['custom_lesson'].add(customWords.length - 1);
-      saveSelectedWordsToSession();
-    }
-    renderLessons();
   } else {
     customWords.push(newWordObj);
     localStorage.setItem('jpapp_custom_words', JSON.stringify(customWords));
@@ -686,10 +740,10 @@ function handleAddWordSubmit(e) {
     renderLessons();
   }
 
+  updateSrsHeaderBadges();
   closeAddWordModal();
 }
 
-/* Export Data.js File for Permanent Sharing */
 function exportDataJs() {
   const fullContent = `const VOCAB_DATA = ${JSON.stringify(VOCAB_DATA, null, 2)};\n`;
   const blob = new Blob([fullContent], { type: 'application/javascript;charset=utf-8;' });
@@ -707,7 +761,7 @@ function startStudySession() {
   let targetWords = [];
 
   if (currentLevel === 'CUSTOM') {
-    targetWords = [...customWords];
+    targetWords = customWords.map(w => ({ word: w, lessonId: 'custom_lesson' }));
   } else {
     const levelData = VOCAB_DATA[currentLevel];
     if (levelData) {
@@ -716,7 +770,7 @@ function startStudySession() {
         if (set && set.size > 0) {
           l.words.forEach((w, idx) => {
             if (set.has(idx)) {
-              targetWords.push(w);
+              targetWords.push({ word: w, lessonId: l.id });
             }
           });
         }
@@ -732,45 +786,67 @@ function startStudySession() {
   const studyMode = document.getElementById('study-mode-select').value;
   studyEngine.startSession(targetWords, studyMode);
 
-  // Switch View
+  launchStudyView(studyMode);
+}
+
+function launchStudyView(studyMode) {
   document.getElementById('lesson-picker-view').classList.add('hidden');
   document.getElementById('study-view').classList.remove('hidden');
 
-  const input = document.getElementById('study-answer-input');
-  const badge = document.getElementById('study-ime-badge');
-
-  if (studyMode === 'vn_to_jp') {
-    initImeBinding(input, badge);
-    input.placeholder = 'Nhập câu trả lời bằng tiếng Nhật...';
-  } else {
-    unbindIme(input);
-    if (badge) badge.textContent = 'Tiếng Việt 🇻🇳';
-    input.placeholder = 'Nhập nghĩa tiếng Việt...';
-  }
-
+  document.getElementById('study-summary-actions').classList.add('hidden');
+  document.getElementById('preview-section').classList.add('hidden');
+  document.getElementById('mc-options-container').classList.add('hidden');
+  document.getElementById('answer-section-inputs').classList.remove('hidden');
 
   renderCurrentCard();
 }
 
 function renderCurrentCard() {
+  const word = studyEngine.getCurrentWord();
   const prompt = studyEngine.getPrompt();
   const progress = studyEngine.getProgress();
 
-  if (!prompt) {
+  if (!word || !prompt) {
     renderStudySummary();
     return;
+  }
+
+  // Auto TTS Play on card render
+  if (word.hiragana) {
+    speakJapanese(word.hiragana);
+  }
+
+  // Header & Progress
+  document.getElementById('study-progress-text').textContent = progress.batchText 
+    ? `${progress.batchText} — Từ ${progress.current}/${progress.total}`
+    : `Câu ${progress.current} / ${progress.total}`;
+  
+  document.getElementById('study-stage-text').textContent = progress.stageText || '';
+  document.getElementById('progress-bar-fill').style.width = `${progress.percentage}%`;
+
+  // Pipeline Stepper
+  const stepperEl = document.getElementById('pipeline-stepper');
+  if (studyEngine.mode === 'new_lesson_pipeline') {
+    stepperEl.classList.remove('hidden');
+    for (let i = 1; i <= 4; i++) {
+      const pill = document.getElementById(`step-pill-${i}`);
+      if (pill) {
+        pill.className = 'step-pill';
+        if (i < progress.pipelineStep) pill.classList.add('completed');
+        else if (i === progress.pipelineStep) pill.classList.add('active');
+      }
+    }
+  } else {
+    stepperEl.classList.add('hidden');
   }
 
   document.getElementById('card-prompt-label').textContent = prompt.label;
   document.getElementById('card-prompt-text').textContent = prompt.main;
   document.getElementById('card-prompt-sub').textContent = prompt.sub;
 
-  document.getElementById('study-progress-text').textContent = `Câu ${progress.current} / ${progress.total}`;
-  document.getElementById('progress-bar-fill').style.width = `${progress.percentage}%`;
-
-  const input = document.getElementById('study-answer-input');
-  input.value = '';
-  input.focus();
+  const previewSec = document.getElementById('preview-section');
+  const mcContainer = document.getElementById('mc-options-container');
+  const typingInputs = document.getElementById('answer-section-inputs');
 
   const revealedBox = document.getElementById('revealed-answer-box');
   revealedBox.classList.remove('show');
@@ -781,14 +857,108 @@ function renderCurrentCard() {
   document.getElementById('btn-show-answer').classList.remove('hidden');
   document.getElementById('btn-next-word').classList.add('hidden');
 
+  // VIEW MODE CONDITIONAL RENDERING
+  if (studyEngine.mode === 'new_lesson_pipeline' && progress.pipelineStep === 1) {
+    // STEP 1: PREVIEW
+    previewSec.classList.remove('hidden');
+    mcContainer.classList.add('hidden');
+    typingInputs.classList.add('hidden');
+
+    document.getElementById('preview-hiragana').textContent = word.hiragana;
+    document.getElementById('preview-vietnamese').textContent = word.vietnamese;
+    const kanjiRow = document.getElementById('preview-kanji-row');
+    if (word.kanji) {
+      document.getElementById('preview-kanji').textContent = word.kanji;
+      kanjiRow.style.display = 'flex';
+    } else {
+      kanjiRow.style.display = 'none';
+    }
+  } else if (studyEngine.mode === 'new_lesson_pipeline' && progress.pipelineStep === 4) {
+    // STEP 4: BATCH GRADUATION
+    previewSec.classList.add('hidden');
+    mcContainer.classList.add('hidden');
+    typingInputs.classList.add('hidden');
+
+    document.getElementById('card-prompt-label').textContent = '🎉 BẠN ĐÃ TỐT NGHIỆP CỤM NÀY!';
+    document.getElementById('card-prompt-text').textContent = `Hoàn thành 7 từ mới!`;
+    document.getElementById('card-prompt-sub').textContent = `Các từ này đã được lưu vào hệ thống Ôn tập Spaced Repetition (SRS).`;
+    
+    document.getElementById('study-summary-actions').classList.remove('hidden');
+  } else if ((studyEngine.mode === 'new_lesson_pipeline' && progress.pipelineStep === 2) ||
+             studyEngine.mode === 'mc_jp_to_vn' || studyEngine.mode === 'mc_vn_to_jp') {
+    // STEP 2 / MULTIPLE CHOICE
+    previewSec.classList.add('hidden');
+    mcContainer.classList.remove('hidden');
+    typingInputs.classList.add('hidden');
+
+    renderMultipleChoiceOptions(mcContainer);
+  } else {
+    // TYPING MODE (Step 3 or Free Typing)
+    previewSec.classList.add('hidden');
+    mcContainer.classList.add('hidden');
+    typingInputs.classList.remove('hidden');
+
+    const input = document.getElementById('study-answer-input');
+    const badge = document.getElementById('study-ime-badge');
+    input.value = '';
+
+    const isVnToJp = (!prompt.isJpPrompt || studyEngine.mode === 'vn_to_jp');
+    if (isVnToJp) {
+      initImeBinding(input, badge);
+      input.placeholder = 'Nhập câu trả lời bằng tiếng Nhật (Gõ Romaji)...';
+    } else {
+      unbindIme(input);
+      if (badge) badge.textContent = 'Tiếng Việt 🇻🇳';
+      input.placeholder = 'Nhập nghĩa tiếng Việt...';
+    }
+
+    input.focus();
+  }
+}
+
+function renderMultipleChoiceOptions(container) {
+  const options = studyEngine.getMultipleChoiceOptions(getAllGlobalWords());
+  container.innerHTML = options.map((opt, idx) => `
+    <button class="mc-option-btn" data-correct="${opt.isCorrect}">
+      ${opt.text}
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.mc-option-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const isCorrect = btn.dataset.correct === 'true';
+      container.querySelectorAll('.mc-option-btn').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.correct === 'true') {
+          b.classList.add('correct');
+        }
+      });
+
+      if (!isCorrect) {
+        btn.classList.add('wrong');
+        showFeedback('Chưa chính xác! 💡', false);
+      } else {
+        studyEngine.score++;
+        showFeedback('Chính xác! 🎉', true);
+      }
+
+      // SRS Record
+      if (studyEngine.mode === 'srs_review' || studyEngine.mode === 'weak_words') {
+        srsEngine.recordReview(studyEngine.getCurrentWord(), studyEngine.getCurrentLessonId(), isCorrect);
+      }
+
+      setTimeout(() => {
+        handleNextWord();
+      }, 1100);
+    });
+  });
 }
 
 function handleAnswerSubmission() {
   const input = document.getElementById('study-answer-input');
   if (!input) return;
 
-  // Finalize IME input before checking (e.g. pending single 'n' -> 'ん')
-  if (typeof convertRomajiSmart === 'function' && studyEngine.mode === 'vn_to_jp') {
+  if (typeof convertRomajiSmart === 'function' && (studyEngine.mode === 'vn_to_jp' || studyEngine.pipelineStep === 3)) {
     input.value = convertRomajiSmart(input.value, currentImeMode, true);
   }
 
@@ -797,7 +967,6 @@ function handleAnswerSubmission() {
 
   const isCorrect = studyEngine.checkAnswer(userAns);
   if (isCorrect) {
-    studyEngine.score++;
     showFeedback('Chính xác! 🎉', true);
     setTimeout(() => {
       handleNextWord();
@@ -809,6 +978,7 @@ function handleAnswerSubmission() {
 
 function showFeedback(msg, isSuccess) {
   const feedbackEl = document.getElementById('feedback-message');
+  if (!feedbackEl) return;
   feedbackEl.textContent = msg;
   feedbackEl.style.color = isSuccess ? '#38ef7d' : '#ff4757';
   feedbackEl.style.fontWeight = 'bold';
@@ -844,12 +1014,18 @@ function handleNextWord() {
 
 function renderStudySummary() {
   const progress = studyEngine.getProgress();
+
+  document.getElementById('pipeline-stepper').classList.add('hidden');
+  document.getElementById('preview-section').classList.add('hidden');
+  document.getElementById('mc-options-container').classList.add('hidden');
+  document.getElementById('answer-section-inputs').classList.add('hidden');
+  document.getElementById('study-summary-actions').classList.remove('hidden');
+
   document.getElementById('card-prompt-label').textContent = 'KẾT QUẢ HOÀN THÀNH 🏆';
   document.getElementById('card-prompt-text').textContent = `${progress.score} / ${progress.total} câu đúng`;
   document.getElementById('card-prompt-sub').textContent = `Tỷ lệ chính xác: ${Math.round((progress.score / progress.total) * 100)}%`;
 
-  document.getElementById('answer-section-inputs').classList.add('hidden');
-  document.getElementById('study-summary-actions').classList.remove('hidden');
+  updateSrsHeaderBadges();
 }
 
 function exitStudySession() {
@@ -860,4 +1036,5 @@ function exitStudySession() {
   
   const input = document.getElementById('study-answer-input');
   unbindIme(input);
+  updateSrsHeaderBadges();
 }
