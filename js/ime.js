@@ -33,6 +33,9 @@ function initImeBinding(inputElement, modeBadgeElement) {
   inputElement.removeEventListener('keydown', handleImeKeydown);
   inputElement.addEventListener('keydown', handleImeKeydown);
 
+  inputElement.removeEventListener('keyup', handleImeKeyup);
+  inputElement.addEventListener('keyup', handleImeKeyup);
+
   inputElement.removeEventListener('blur', handleImeBlur);
   inputElement.addEventListener('blur', handleImeBlur);
 
@@ -58,6 +61,7 @@ function unbindIme(inputElement) {
 
   inputElement.removeEventListener('input', handleImeInput);
   inputElement.removeEventListener('keydown', handleImeKeydown);
+  inputElement.removeEventListener('keyup', handleImeKeyup);
   inputElement.removeEventListener('blur', handleImeBlur);
 
   if (activeInput === inputElement) {
@@ -67,64 +71,34 @@ function unbindIme(inputElement) {
 
 function stripVietnameseAccents(str) {
   if (!str) return str;
-  let s = str.normalize('NFC').replace(/\s+/g, '');
+  let s = str.normalize('NFC');
 
-  // 1. Tone vowel + same vowel (UniKey outputs áa for asa, ảa for ara, ỏo for oro, óo for oso, etc.)
-  s = s.replace(/áa/g, 'asa').replace(/ée/g, 'ese').replace(/íi/g, 'isi').replace(/óo/g, 'oso').replace(/úu/g, 'usu');
-  s = s.replace(/àa/g, 'afa').replace(/èe/g, 'efe').replace(/ìi/g, 'ifi').replace(/òo/g, 'ofo').replace(/ùu/g, 'ufu');
-  s = s.replace(/ảa/g, 'ara').replace(/ẻe/g, 'ere').replace(/ỉi/g, 'iri').replace(/ỏo/g, 'oro').replace(/ủu/g, 'uru');
-  s = s.replace(/ãa/g, 'axa').replace(/ẽe/g, 'exe').replace(/ĩi/g, 'ixi').replace(/õo/g, 'oxo').replace(/ũu/g, 'uxu');
-  s = s.replace(/ạa/g, 'aja').replace(/ẹe/g, 'eje').replace(/ịi/g, 'iji').replace(/ọo/g, 'ojo').replace(/ụu/g, 'uju');
+  // 1. Kana + UniKey Tone Mark:
+  // Since Kana (あ,い,う,え,お) ALREADY includes the vowel, the tone mark represents ONLY the consonant!
+  s = s.replace(/([\u3040-\u30ff])[áấắ]/g, '$1s').replace(/([\u3040-\u30ff])[ảẩẳ]/g, '$1r').replace(/([\u3040-\u30ff])[àầằ]/g, '$1f').replace(/([\u3040-\u30ff])[ãẫẵ]/g, '$1x').replace(/([\u3040-\u30ff])[ạậặ]/g, '$1j');
+  s = s.replace(/([\u3040-\u30ff])[éế]/g, '$1s').replace(/([\u3040-\u30ff])[ẻể]/g, '$1r').replace(/([\u3040-\u30ff])[èề]/g, '$1f').replace(/([\u3040-\u30ff])[ẽễ]/g, '$1x').replace(/([\u3040-\u30ff])[ẹệ]/g, '$1j');
+  s = s.replace(/([\u3040-\u30ff])í/g, '$1s').replace(/([\u3040-\u30ff])ỉ/g, '$1r').replace(/([\u3040-\u30ff])ì/g, '$1f').replace(/([\u3040-\u30ff])ĩ/g, '$1x').replace(/([\u3040-\u30ff])ị/g, '$1j');
+  s = s.replace(/([\u3040-\u30ff])[óốớ]/g, '$1s').replace(/([\u3040-\u30ff])[ỏổở]/g, '$1r').replace(/([\u3040-\u30ff])[òồờ]/g, '$1f').replace(/([\u3040-\u30ff])[õỗỡ]/g, '$1x').replace(/([\u3040-\u30ff])[ọộợ]/g, '$1j');
+  s = s.replace(/([\u3040-\u30ff])[úứ]/g, '$1s').replace(/([\u3040-\u30ff])[ủử]/g, '$1r').replace(/([\u3040-\u30ff])[ùừ]/g, '$1f').replace(/([\u3040-\u30ff])[ũữ]/g, '$1x').replace(/([\u3040-\u30ff])[ụự]/g, '$1j');
 
-  // 2. Residual Kana + UniKey Telex duplicates (e.g. あá -> as, おôt -> oto, おô -> oo)
-  s = s.replace(/あá/g, 'as').replace(/あà/g, 'af').replace(/あả/g, 'ar').replace(/あã/g, 'ax').replace(/あạ/g, 'aj');
-  s = s.replace(/えé/g, 'es').replace(/えè/g, 'ef').replace(/えẻ/g, 'er').replace(/えẽ/g, 'ex').replace(/えẹ/g, 'ej');
-  s = s.replace(/いí/g, 'is').replace(/いì/g, 'if').replace(/いỉ/g, 'ir').replace(/いĩ/g, 'ix').replace(/いị/g, 'ij');
-  s = s.replace(/おó/g, 'os').replace(/おò/g, 'of').replace(/おỏ/g, 'or').replace(/おõ/g, 'ox').replace(/おọ/g, 'oj');
-  s = s.replace(/うú/g, 'us').replace(/うù/g, 'uf').replace(/うủ/g, 'ur').replace(/うũ/g, 'ux').replace(/うụ/g, 'uj');
+  // 2. Standalone Latin Tone Marks Decoding (when typed without preceding Kana):
+  s = s.replace(/ả/g, 'ar').replace(/ẻ/g, 'er').replace(/ỉ/g, 'ir').replace(/ỏ/g, 'or').replace(/ủ/g, 'ur').replace(/ỷ/g, 'yr');
+  s = s.replace(/á/g, 'as').replace(/é/g, 'es').replace(/í/g, 'is').replace(/ó/g, 'os').replace(/ú/g, 'us').replace(/ý/g, 'ys');
+  s = s.replace(/à/g, 'af').replace(/è/g, 'ef').replace(/ì/g, 'if').replace(/ò/g, 'of').replace(/ù/g, 'uf').replace(/ỳ/g, 'yf');
+  s = s.replace(/ã/g, 'ax').replace(/ẽ/g, 'ex').replace(/ĩ/g, 'ix').replace(/õ/g, 'ox').replace(/ũ/g, 'ux').replace(/ỹ/g, 'yx');
+  s = s.replace(/ạ/g, 'aj').replace(/ẹ/g, 'ej').replace(/ị/g, 'ij').replace(/ọ/g, 'oj').replace(/ụ/g, 'uj').replace(/ỵ/g, 'yj');
 
-  // Kana + circumflex/shifted word
-  s = s.replace(/お(?:ô|oô|oo)t/gi, 'oto');
-  s = s.replace(/あ(?:â|aâ|aa)t/gi, 'ata');
-  s = s.replace(/え(?:ê|eê|ee)t/gi, 'ete');
+  // 3. If UniKey Telex consumes trailing vowel across a consonant (ata -> ât, oto -> ôt, ete -> êt),
+  // restore the trailing vowel if not already followed by one:
+  s = s.replace(/â([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'a$1a');
+  s = s.replace(/ô([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'o$1o');
+  s = s.replace(/ê([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'e$1e');
 
-  s = s.replace(/お[ôốồổỗộ]/gi, 'oo');
-  s = s.replace(/あ[âấầẩẫậ]/gi, 'aa');
-  s = s.replace(/え[êếềểễệ]/gi, 'ee');
-
-  // 3. Standard UniKey Telex shifts without preceding Kana
-  s = s.replace(/(?:oô|oo)t/gi, 'oto');
-  s = s.replace(/(?:aâ|aa)t/gi, 'ata');
-  s = s.replace(/(?:eê|ee)t/gi, 'ete');
-  s = s.replace(/ô([bcdfghjklmnpqrstvwxyz])/gi, 'o$1o');
-  s = s.replace(/â([bcdfghjklmnpqrstvwxyz])/gi, 'a$1a');
-  s = s.replace(/ê([bcdfghjklmnpqrstvwxyz])/gi, 'e$1e');
-
-  // 4. Tone mark mappings (single characters)
-  s = s.replace(/ấ/g, 'aas').replace(/ầ/g, 'aaf').replace(/ẩ/g, 'aar').replace(/ẫ/g, 'aax').replace(/ậ/g, 'aaj');
-  s = s.replace(/ế/g, 'ees').replace(/ề/g, 'eef').replace(/ể/g, 'eer').replace(/ễ/g, 'eex').replace(/ệ/g, 'eej');
-  s = s.replace(/ố/g, 'oos').replace(/ồ/g, 'oof').replace(/ổ/g, 'oor').replace(/ỗ/g, 'oox').replace(/ộ/g, 'ooj');
-
-  s = s.replace(/ắ/g, 'aws').replace(/ằ/g, 'awf').replace(/ẳ/g, 'awr').replace(/ẵ/g, 'awx').replace(/ặ/g, 'awj');
-  s = s.replace(/ớ/g, 'ows').replace(/ờ/g, 'owf').replace(/ở/g, 'owr').replace(/ỡ/g, 'owx').replace(/ợ/g, 'owj');
-  s = s.replace(/ứ/g, 'uws').replace(/ừ/g, 'uwf').replace(/ử/g, 'uwr').replace(/ữ/g, 'uwx').replace(/ự/g, 'uwj');
-
-  s = s.replace(/á/g, 'as').replace(/à/g, 'af').replace(/ả/g, 'ar').replace(/ã/g, 'ax').replace(/ạ/g, 'aj');
-  s = s.replace(/é/g, 'es').replace(/è/g, 'ef').replace(/ẻ/g, 'er').replace(/ẽ/g, 'ex').replace(/ẹ/g, 'ej');
-  s = s.replace(/í/g, 'is').replace(/ì/g, 'if').replace(/ỉ/g, 'ir').replace(/ĩ/g, 'ix').replace(/ị/g, 'ij');
-  s = s.replace(/ó/g, 'os').replace(/ò/g, 'of').replace(/ỏ/g, 'or').replace(/õ/g, 'ox').replace(/ọ/g, 'oj');
-  s = s.replace(/ú/g, 'us').replace(/ù/g, 'uf').replace(/ủ/g, 'ur').replace(/ũ/g, 'ux').replace(/ũ/g, 'uj');
-  s = s.replace(/ý/g, 'ys').replace(/ỳ/g, 'yf').replace(/ỷ/g, 'yr').replace(/ỹ/g, 'yx').replace(/ỵ/g, 'yj');
-
-  // 5. Standalone circumflex, horn, breve, stroke
-  s = s.replace(/ô/g, 'oo').replace(/â/g, 'aa').replace(/ê/g, 'ee');
-  s = s.replace(/ơ/g, 'o').replace(/ư/g, 'u').replace(/ă/g, 'a');
-  s = s.replace(/đ/g, 'd').replace(/Đ/g, 'D');
-
-  // 6. Strip any residual unhandled diacritics
-  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  return s;
+  // 4. Fallback NFD decomposition for any remaining accents
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+          .replace(/â/g, 'a').replace(/ê/g, 'e').replace(/ô/g, 'o')
+          .replace(/ă/g, 'a').replace(/ơ/g, 'o').replace(/ư/g, 'u');
 }
 
 function convertRomajiSmart(text, mode = 'hiragana', finalize = false) {
@@ -132,29 +106,26 @@ function convertRomajiSmart(text, mode = 'hiragana', finalize = false) {
 
   // Clean spaces and demangle Telex
   const cleanText = stripVietnameseAccents(text);
+
+  // Collapse terminal 'nn' into "n'" for WanaKana's explicit ん marker
+  // (avoids WanaKana producing んん from double-n at end of string)
+  const processedText = cleanText.replace(/nn$/i, "n'");
   const converter = mode === 'katakana' ? wanakana.toKatakana : wanakana.toHiragana;
 
   if (finalize) {
-    return converter(cleanText);
+    return converter(processedText);
   }
 
   // If text ends with a single trailing 'n' or 'N' (and not 'nn' or "n'"), keep the 'n' pending
-  const endsWithSingleN = /[a-zA-Z]?[nN]$/.test(cleanText) && !/[nN]{2}$/.test(cleanText) && !/[nN]'$/.test(cleanText);
+  const endsWithSingleN = /[a-zA-Z]?[nN]$/.test(processedText) && !/[nN]{2}$/.test(processedText) && !/[nN]'$/.test(processedText);
 
   let result = '';
   if (endsWithSingleN) {
-    const mainPart = cleanText.slice(0, -1);
-    const lastChar = cleanText.slice(-1);
+    const mainPart = processedText.slice(0, -1);
+    const lastChar = processedText.slice(-1);
     result = converter(mainPart) + lastChar;
   } else {
-    result = converter(cleanText);
-  }
-
-  // Auto-append a space ' ' after any pending Romaji consonant (e.g. s, t, k, g, r, p, b, d, z, h, f, n)
-  // so UniKey immediately commits & resets its internal OS Telex state buffer.
-  const endsWithPendingConsonant = /[bcdfghjklmnpqrstvwxyz]$/i.test(result);
-  if (endsWithPendingConsonant) {
-    return result + ' ';
+    result = converter(processedText);
   }
 
   return result;
@@ -217,6 +188,33 @@ function handleImeKeydown(e) {
       e.preventDefault();
       insertTextAtCursor(e.target, smallKana);
       return;
+    }
+  }
+}
+
+function handleImeKeyup(e) {
+  if (!imeActive || typeof wanakana === 'undefined') return;
+  const input = e.target;
+  if (!input || !input.value) return;
+
+  const key = (e.key || '').toLowerCase();
+  const vowelMap = { 'a': 'a', 'i': 'i', 'u': 'u', 'e': 'e', 'o': 'o' };
+  const releasedVowel = vowelMap[key];
+
+  if (releasedVowel) {
+    const val = input.value;
+    const clean = val.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    // If DOM value currently ends with an unconverted Latin consonant
+    if (/[bcdfghjklmnpqrstvwxyz]$/i.test(clean)) {
+      const appended = val + releasedVowel;
+      const converted = convertRomajiSmart(appended, currentImeMode, false);
+      if (converted !== val) {
+        input.value = converted;
+        input.setSelectionRange(input.value.length, input.value.length);
+        lastInputVal = input.value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
   }
 }
