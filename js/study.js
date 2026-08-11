@@ -1,3 +1,8 @@
+function stripAccents(str) {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
 function normalizeVietnamese(text) {
   if (!text) return '';
   let str = text.normalize('NFC').toLowerCase();
@@ -16,7 +21,13 @@ function normalizeVietnamese(text) {
     str = str.replaceAll(oldTone, newTone);
   }
 
-  // Remove multiple spaces and punctuation boundaries
+  // Standardize tildes: convert ～ (U+FF5E), 〜 (U+301C), … (U+2026), ... (3+ dots) to ASCII ~
+  str = str.replace(/[\uFF5E\u301C\u2026]+/g, '~').replace(/\.{3,}/g, '~');
+
+  // Standardize spaces around tildes (e.g. "người ~" or "người~" -> "người ~")
+  str = str.replace(/\s*~\s*/g, ' ~ ');
+
+  // Remove multiple spaces and trim
   return str.replace(/\s+/g, ' ').trim();
 }
 
@@ -25,13 +36,21 @@ function normalizeJapanese(text) {
   // 1. Unicode NFC Normalization (crucial for voiced/semi-voiced Kana like べ, ぷ, ば, ぼ, が)
   let str = text.normalize('NFC').trim().toLowerCase();
 
-  // 2. Remove all spaces (including full-width Japanese space U+3000)
+  // 2. Temporarily convert all non-ASCII tildes (～ U+FF5E, 〜 U+301C, … U+2026, ... 3+ dots) to ASCII ~
+  // so WanaKana's Romaji engine can parse any surrounding Romaji (e.g. "～san" -> "~san" -> "〜さん")
+  str = str.replace(/[\uFF5E\u301C\u2026]+/g, '~').replace(/\.{3,}/g, '~');
+
+  // 3. Remove all spaces (including full-width Japanese space U+3000)
   str = str.replace(/[\s\u3000]+/g, '');
 
-  // 3. Convert Romaji / Katakana to Hiragana if WanaKana is available
+  // 4. Convert Romaji / Katakana to Hiragana if WanaKana is available
   if (typeof wanakana !== 'undefined') {
     str = wanakana.toHiragana(str);
   }
+
+  // 5. Unify all tildes (~ ASCII U+007E, ～ U+FF5E, 〜 U+301C, … U+2026) to canonical Japanese full-width ～ U+FF5E
+  str = str.replace(/[\u007E\uFF5E\u301C\u2026]+/g, '～').replace(/\.{3,}/g, '～');
+
   return str.normalize('NFC');
 }
 
@@ -105,18 +124,54 @@ class StudyEngine {
       const inputClean = normalizeVietnamese(userInput);
       const vnClean = normalizeVietnamese(word.vietnamese);
 
+      const inputNoTilde = inputClean.replace(/~/g, '').replace(/\s+/g, ' ').trim();
+      const vnNoTilde = vnClean.replace(/~/g, '').replace(/\s+/g, ' ').trim();
+
+      const inputUnaccented = stripAccents(inputNoTilde);
+      const vnUnaccented = stripAccents(vnNoTilde);
+
+      // Exact normalized match (with or without tildes/accents)
+      if (
+        inputClean === vnClean ||
+        (inputNoTilde && inputNoTilde === vnNoTilde) ||
+        (inputUnaccented && inputUnaccented === vnUnaccented)
+      ) {
+        return true;
+      }
+
       // Split multiple acceptable meanings by comma, slash, semicolon, or parentheses
-      const meanings = word.vietnamese.split(/[,;/()]/)
+      const rawMeanings = word.vietnamese.split(/[,;/()]/);
+      const meaningsClean = rawMeanings
         .map(m => normalizeVietnamese(m))
         .filter(m => m.length > 0);
+      const meaningsNoTilde = rawMeanings
+        .map(m => normalizeVietnamese(m).replace(/~/g, '').replace(/\s+/g, ' ').trim())
+        .filter(m => m.length > 0);
+      const meaningsUnaccented = meaningsNoTilde
+        .map(m => stripAccents(m));
 
-      // Exact normalized match or match within individual meanings
-      if (inputClean === vnClean) return true;
-      return meanings.some(m => inputClean === m || inputClean.includes(m) || m.includes(inputClean));
+      return meaningsClean.some((mClean, idx) => {
+        const mNoTilde = meaningsNoTilde[idx];
+        const mUnaccented = meaningsUnaccented[idx];
+        return (
+          (mClean && inputClean === mClean) ||
+          (mNoTilde && inputNoTilde === mNoTilde) ||
+          (mUnaccented && inputUnaccented === mUnaccented) ||
+          (inputClean.length >= 2 && mClean.includes(inputClean)) ||
+          (mClean.length >= 2 && inputClean.includes(mClean)) ||
+          (inputNoTilde.length >= 2 && mNoTilde.includes(inputNoTilde)) ||
+          (mNoTilde.length >= 2 && inputNoTilde.includes(mNoTilde)) ||
+          (inputUnaccented.length >= 2 && mUnaccented.includes(inputUnaccented)) ||
+          (mUnaccented.length >= 2 && mUnaccented.includes(inputUnaccented))
+        );
+      });
     } else {
       // VN -> JP mode
       const inputClean = normalizeJapanese(userInput);
       if (!inputClean) return false;
+
+      const inputNoTilde = inputClean.replace(/～/g, '');
+      const inputNoPunct = inputClean.replace(/[～\uFF1F\u003F\uFF01\u0021\u3002\u002E\u3001\u002C]+/g, '');
 
       // Extract all acceptable Japanese answers (hiragana & kanji, split by delimiters)
       const rawOptions = [];
@@ -131,11 +186,24 @@ class StudyEngine {
 
       // Also compare raw input without wanakana conversion in case of direct Kanji match
       const inputRawClean = userInput.normalize('NFC').trim().toLowerCase().replace(/[\s\u3000]+/g, '');
+      const inputRawNoTilde = inputRawClean.replace(/[~～〜…\uFF1F\u003F\uFF01\u0021\u3002\u002E\u3001\u002C]+/g, '');
 
       return rawOptions.some(opt => {
+        if (!opt) return false;
         const optNormalized = normalizeJapanese(opt);
+        const optNoTilde = optNormalized.replace(/～/g, '');
+        const optNoPunct = optNormalized.replace(/[～\uFF1F\u003F\uFF01\u0021\u3002\u002E\u3001\u002C]+/g, '');
+
         const optRawClean = opt.normalize('NFC').trim().toLowerCase().replace(/[\s\u3000]+/g, '');
-        return (optNormalized && optNormalized === inputClean) || (optRawClean && optRawClean === inputRawClean);
+        const optRawNoTilde = optRawClean.replace(/[~～〜…\uFF1F\u003F\uFF01\u0021\u3002\u002E\u3001\u002C]+/g, '');
+
+        return (
+          (optNormalized && optNormalized === inputClean) ||
+          (optNoTilde && optNoTilde === inputNoTilde) ||
+          (optNoPunct && optNoPunct === inputNoPunct) ||
+          (optRawClean && optRawClean === inputRawClean) ||
+          (optRawNoTilde && optRawNoTilde === inputRawNoTilde)
+        );
       });
     }
   }
