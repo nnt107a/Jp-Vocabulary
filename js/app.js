@@ -811,8 +811,8 @@ function renderCurrentCard() {
     return;
   }
 
-  // Auto TTS Play on card render
-  if (word.hiragana) {
+  // Auto TTS Play on card render ONLY when prompt is Japanese (JP -> VN mode or Preview)
+  if (word.hiragana && prompt.isJpPrompt) {
     speakJapanese(word.hiragana);
   }
 
