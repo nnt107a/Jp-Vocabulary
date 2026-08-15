@@ -1,9 +1,4 @@
-// IME module powered by WanaKana library with Smart Trailing 'n' protection, Space protection, Small Kana & UniKey support
-
-let currentImeMode = 'hiragana'; // 'hiragana' or 'katakana'
-let activeInput = null;
-let imeActive = false;
-let lastInputVal = '';
+const wanakana = require('wanakana');
 
 const KANA_TO_ROMAJI = {
   'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
@@ -69,70 +64,6 @@ function decodeVietnameseCharToTelex(ch) {
   return map[ch] || null;
 }
 
-function initImeBinding(inputElement, modeBadgeElement) {
-  if (!inputElement) return;
-
-  activeInput = inputElement;
-  imeActive = true;
-  lastInputVal = inputElement.value || '';
-
-  // Set input attributes to disable mobile autocorrect & prediction
-  inputElement.setAttribute('lang', 'ja');
-  inputElement.setAttribute('autocorrect', 'off');
-  inputElement.setAttribute('autocapitalize', 'none');
-  inputElement.setAttribute('spellcheck', 'false');
-  inputElement.setAttribute('autocomplete', 'off');
-
-  // Unbind native wanakana to avoid event conflicts & DOM desync
-  if (typeof wanakana !== 'undefined') {
-    try {
-      wanakana.unbind(inputElement);
-    } catch (err) {}
-  }
-
-  // Bind clean custom listeners
-  inputElement.removeEventListener('input', handleImeInput);
-  inputElement.addEventListener('input', handleImeInput);
-
-  inputElement.removeEventListener('keydown', handleImeKeydown);
-  inputElement.addEventListener('keydown', handleImeKeydown);
-
-  inputElement.removeEventListener('keyup', handleImeKeyup);
-  inputElement.addEventListener('keyup', handleImeKeyup);
-
-  inputElement.removeEventListener('blur', handleImeBlur);
-  inputElement.addEventListener('blur', handleImeBlur);
-
-  if (modeBadgeElement) {
-    updateImeBadge(modeBadgeElement);
-  }
-}
-
-function unbindIme(inputElement) {
-  if (!inputElement) return;
-  imeActive = false;
-  
-  if (typeof wanakana !== 'undefined') {
-    try {
-      wanakana.unbind(inputElement);
-    } catch (err) {}
-  }
-
-  inputElement.removeAttribute('lang');
-  inputElement.removeAttribute('autocorrect');
-  inputElement.removeAttribute('autocapitalize');
-  inputElement.setAttribute('spellcheck', 'true');
-
-  inputElement.removeEventListener('input', handleImeInput);
-  inputElement.removeEventListener('keydown', handleImeKeydown);
-  inputElement.removeEventListener('keyup', handleImeKeyup);
-  inputElement.removeEventListener('blur', handleImeBlur);
-
-  if (activeInput === inputElement) {
-    activeInput = null;
-  }
-}
-
 function stripVietnameseAccents(str) {
   if (!str) return str;
   let s = str.normalize('NFC');
@@ -144,19 +75,17 @@ function stripVietnameseAccents(str) {
   s = s.replace(/([\u3040-\u30ff])[óốớ]/g, '$1s').replace(/([\u3040-\u30ff])[ỏổở]/g, '$1r').replace(/([\u3040-\u30ff])[òồờ]/g, '$1f').replace(/([\u3040-\u30ff])[õỗỡ]/g, '$1x').replace(/([\u3040-\u30ff])[ọộợ]/g, '$1j');
   s = s.replace(/([\u3040-\u30ff])[úứ]/g, '$1s').replace(/([\u3040-\u30ff])[ủử]/g, '$1r').replace(/([\u3040-\u30ff])[ùừ]/g, '$1f').replace(/([\u3040-\u30ff])[ũữ]/g, '$1x').replace(/([\u3040-\u30ff])[ụự]/g, '$1j');
 
-  // 2. Standalone Latin Tone Marks Decoding (when typed without preceding Kana):
+  // 2. Standalone Latin Tone Marks Decoding:
   s = s.replace(/ả/g, 'ar').replace(/ẻ/g, 'er').replace(/ỉ/g, 'ir').replace(/ỏ/g, 'or').replace(/ủ/g, 'ur').replace(/ỷ/g, 'yr');
   s = s.replace(/á/g, 'as').replace(/é/g, 'es').replace(/í/g, 'is').replace(/ó/g, 'os').replace(/ú/g, 'us').replace(/ý/g, 'ys');
   s = s.replace(/à/g, 'af').replace(/è/g, 'ef').replace(/ì/g, 'if').replace(/ò/g, 'of').replace(/ù/g, 'uf').replace(/ỳ/g, 'yf');
   s = s.replace(/ã/g, 'ax').replace(/ẽ/g, 'ex').replace(/ĩ/g, 'ix').replace(/õ/g, 'ox').replace(/ũ/g, 'ux').replace(/ỹ/g, 'yx');
   s = s.replace(/ạ/g, 'aj').replace(/ẹ/g, 'ej').replace(/ị/g, 'ij').replace(/ọ/g, 'oj').replace(/ụ/g, 'uj').replace(/ỵ/g, 'yj');
 
-  // 3. Circumflex & Horn Restoration across consonant
   s = s.replace(/â([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'a$1a');
   s = s.replace(/ô([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'o$1o');
   s = s.replace(/ê([bcdfghjklmnpqrstvwxyz])(?![aeiouyâêôơưăáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ])/gi, 'e$1e');
 
-  // 4. Fallback NFD decomposition for any remaining accents
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           .replace(/đ/g, 'd').replace(/Đ/g, 'D')
           .replace(/â/g, 'a').replace(/ê/g, 'e').replace(/ô/g, 'o')
@@ -188,10 +117,7 @@ function convertRomajiSmart(val, lastVal = '', mode = 'hiragana', finalize = fal
     }
   }
 
-  // Clean spaces and demangle Telex
   const cleanText = stripVietnameseAccents(textToProcess);
-
-  // Collapse terminal 'nn' into "n'" for WanaKana's explicit ん marker
   const processedText = cleanText.replace(/nn$/i, "n'");
   const converter = mode === 'katakana' ? wanakana.toKatakana : wanakana.toHiragana;
 
@@ -199,7 +125,6 @@ function convertRomajiSmart(val, lastVal = '', mode = 'hiragana', finalize = fal
     return converter(processedText);
   }
 
-  // If text ends with a single trailing 'n' or 'N' (and not 'nn' or "n'"), keep the 'n' pending
   const endsWithSingleN = /[a-zA-Z]?[nN]$/.test(processedText) && !/[nN]{2}$/.test(processedText) && !/[nN]'$/.test(processedText);
 
   let result = '';
@@ -214,94 +139,5 @@ function convertRomajiSmart(val, lastVal = '', mode = 'hiragana', finalize = fal
   return result;
 }
 
-function handleImeInput(e) {
-  if (!imeActive || typeof wanakana === 'undefined') return;
-
-  const input = e.target;
-  const val = input.value;
-  if (!val) {
-    lastInputVal = '';
-    return;
-  }
-
-  const converted = convertRomajiSmart(val, lastInputVal, currentImeMode, false);
-
-  if (converted !== val) {
-    input.value = converted;
-    input.setSelectionRange(input.value.length, input.value.length);
-  }
-  lastInputVal = input.value;
-}
-
-function handleImeBlur(e) {
-  if (!imeActive || typeof wanakana === 'undefined') return;
-  const input = e.target;
-  if (input && input.value) {
-    input.value = convertRomajiSmart(input.value, lastInputVal, currentImeMode, true);
-    lastInputVal = input.value;
-  }
-}
-
-function handleImeKeydown(e) {
-  if (!imeActive) return;
-
-  // Space handling: Disable space completely & transform trailing 'n' into ん / ン
-  if (e.key === ' ' || e.code === 'Space') {
-    e.preventDefault();
-    const input = e.target;
-    if (input && input.value) {
-      input.value = convertRomajiSmart(input.value, lastInputVal, currentImeMode, true);
-      lastInputVal = input.value;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    return;
-  }
-
-  // Shift + T / Y / U / O shortcuts for small Kana (っ/ゃ/ゅ/ょ/ー)
-  if (e.shiftKey) {
-    const key = e.key.toLowerCase();
-    let smallKana = '';
-    
-    if (key === 't') smallKana = currentImeMode === 'katakana' ? 'ッ' : 'っ';
-    if (key === 'y') smallKana = currentImeMode === 'katakana' ? 'ャ' : 'ゃ';
-    if (key === 'u') smallKana = currentImeMode === 'katakana' ? 'ュ' : 'ゅ';
-    if (key === 'o') smallKana = currentImeMode === 'katakana' ? 'ョ' : 'ょ';
-
-    if (smallKana) {
-      e.preventDefault();
-      insertTextAtCursor(e.target, smallKana);
-      return;
-    }
-  }
-}
-
-function handleImeKeyup(e) {
-  // Keyup event handled cleanly without modifying DOM input.value
-}
-
-function insertTextAtCursor(input, text) {
-  const start = input.selectionStart || input.value.length;
-  const end = input.selectionEnd || input.value.length;
-  const val = input.value;
-  input.value = val.substring(0, start) + text + val.substring(end);
-  const newPos = start + text.length;
-  input.setSelectionRange(newPos, newPos);
-  lastInputVal = input.value;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-function setImeMode(mode, inputElement, modeBadgeElement) {
-  currentImeMode = mode;
-  if (inputElement) {
-    initImeBinding(inputElement, modeBadgeElement);
-  }
-  if (modeBadgeElement) {
-    updateImeBadge(modeBadgeElement);
-  }
-}
-
-function updateImeBadge(modeBadgeElement) {
-  if (modeBadgeElement) {
-    modeBadgeElement.textContent = currentImeMode === 'katakana' ? 'カ (Katakana)' : 'あ (Hiragana)';
-  }
-}
+console.log("=== PREFIX SIMULATION ===");
+console.log(convertRomajiSmart("わたしはé", "わたしはて", "hiragana"));
