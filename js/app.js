@@ -101,9 +101,11 @@ function applyVocabOverrides() {
 
   if (VOCAB_DATA.N5) {
     VOCAB_DATA.N5.lessons.forEach(lesson => {
-      lesson.words.forEach(word => {
-        word.kanji = "";
-      });
+      if (lesson.id !== 'n5_b6') {
+        lesson.words.forEach(word => {
+          if (!word.kanji) word.kanji = "";
+        });
+      }
     });
   }
 }
@@ -144,6 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
+  const savedMode = loadStateFromStorage('jpapp_selected_study_mode');
+  const selectEl = document.getElementById('study-mode-select');
+  if (savedMode && selectEl) {
+    selectEl.value = savedMode;
+  }
+
   renderLevelTabs();
   renderLessons();
   setupEventListeners();
@@ -478,8 +486,11 @@ function setupEventListeners() {
     renderLessons();
   });
 
-  // Start Study Button
+  // Start Study Button & Mode Persistence
   document.getElementById('btn-start-study')?.addEventListener('click', startStudySession);
+  document.getElementById('study-mode-select')?.addEventListener('change', (e) => {
+    saveStateToStorage('jpapp_selected_study_mode', e.target.value);
+  });
 
   // Custom Word Modal Controls
   document.getElementById('btn-open-custom-modal')?.addEventListener('click', () => openAddWordModal(null));
@@ -498,6 +509,27 @@ function setupEventListeners() {
 
   // Export Data Button
   document.getElementById('btn-export-data')?.addEventListener('click', exportDataJs);
+
+  // Conjugation Guide Modal Controls
+  document.getElementById('btn-open-conjugation-guide')?.addEventListener('click', openConjugationGuideModal);
+  document.getElementById('conjugation-modal-close')?.addEventListener('click', closeConjugationGuideModal);
+  document.getElementById('conjugation-modal-done')?.addEventListener('click', closeConjugationGuideModal);
+
+  document.querySelectorAll('.conj-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.conj-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.conj-tab-content').forEach(c => c.classList.add('hidden'));
+
+      btn.classList.add('active');
+      const targetTabId = btn.dataset.tab;
+      const targetContent = document.getElementById(targetTabId);
+      if (targetContent) targetContent.classList.remove('hidden');
+
+      if (targetTabId === 'tab-matrix') {
+        render24VerbsMatrixTable();
+      }
+    });
+  });
 
   // IME Toggle
   document.getElementById('ime-toggle-btn')?.addEventListener('click', () => {
@@ -533,7 +565,7 @@ function setupEventListeners() {
   document.getElementById('btn-exit-study')?.addEventListener('click', exitStudySession);
   document.getElementById('btn-preview-next')?.addEventListener('click', handleNextWord);
 
-  document.getElementById('btn-summary-restart')?.addEventListener('click', startStudySession);
+  document.getElementById('btn-summary-restart')?.addEventListener('click', () => startStudySession(true));
   document.getElementById('btn-summary-exit')?.addEventListener('click', exitStudySession);
 
   // Enter Key Handler
@@ -777,8 +809,117 @@ function exportDataJs() {
   document.body.removeChild(link);
 }
 
+/* Conjugation Matrix Guide Modal Functions */
+function openConjugationGuideModal() {
+  const modal = document.getElementById('conjugation-matrix-modal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeConjugationGuideModal() {
+  const modal = document.getElementById('conjugation-matrix-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+function render24VerbsMatrixTable() {
+  const container = document.getElementById('matrix-24-container');
+  if (!container || typeof VERB_CONJUGATION_DATA === 'undefined') return;
+
+  const verbs = VERB_CONJUGATION_DATA.verbs;
+
+  let html = `
+    <table class="conj-matrix-table">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Động Từ</th>
+          <th>Nghĩa</th>
+          <th>Nhóm</th>
+          <th>Không ~ (V-nai)</th>
+          <th>Lễ phép (V-masu)</th>
+          <th>Thể て (V-te)</th>
+          <th>Thể た (V-ta)</th>
+          <th>Nếu ~ (V-ba)</th>
+          <th>~ thôi (V-ou)</th>
+        </tr>
+      </thead>
+      <tbody class="jp-text">
+  `;
+
+  verbs.forEach((v, idx) => {
+    const badgeClass = v.group === 1 ? 'badge-v1' : (v.group === 2 ? 'badge-v2' : 'badge-v3');
+    html += `
+      <tr>
+        <td style="color: var(--text-muted); font-size: 0.8rem;">${idx + 1}</td>
+        <td style="font-weight: 600;">${v.kanji ? `${v.kanji} (${v.dictionary})` : v.dictionary}</td>
+        <td style="font-family: inherit; font-size: 0.85rem; color: var(--text-muted);">${v.vietnamese}</td>
+        <td><span class="${badgeClass}">Nhóm ${v.group}</span></td>
+        <td>${v.forms.nai}</td>
+        <td>${v.forms.masu}</td>
+        <td style="color: var(--accent-pink);">${v.forms.te}</td>
+        <td style="color: var(--accent-cyan);">${v.forms.ta}</td>
+        <td>${v.forms.ba}</td>
+        <td>${v.forms.volitional}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
+}
+
+let isConjugationModeActive = false;
+
 /* Study Session Controller */
-function startStudySession() {
+function startStudySession(isRestart = false) {
+  const studyModeSelect = document.getElementById('study-mode-select');
+  const studyMode = studyModeSelect ? studyModeSelect.value : 'new_lesson_pipeline';
+
+  if (studyMode === 'verb_conjugation' || studyMode === 'verb_group_id') {
+    isConjugationModeActive = true;
+    const formFilter = studyMode === 'verb_group_id' ? 'group' : 'all';
+    
+    let selectedVerbs = [];
+    const selectedHiraganaSet = new Set();
+
+    if (currentLevel === 'CUSTOM') {
+      customWords.forEach(w => selectedHiraganaSet.add(w.hiragana));
+    } else {
+      const levelData = VOCAB_DATA[currentLevel];
+      if (levelData) {
+        levelData.lessons.forEach(l => {
+          const set = selectedWordsMap[l.id];
+          if (set && set.size > 0) {
+            l.words.forEach((w, idx) => {
+              if (set.has(idx)) {
+                selectedHiraganaSet.add(w.hiragana);
+                if (w.kanji) selectedHiraganaSet.add(w.kanji);
+              }
+            });
+          }
+        });
+      }
+    }
+
+    if (selectedHiraganaSet.size > 0 && typeof VERB_CONJUGATION_DATA !== 'undefined') {
+      selectedVerbs = VERB_CONJUGATION_DATA.verbs.filter(v => 
+        selectedHiraganaSet.has(v.dictionary) || selectedHiraganaSet.has(v.kanji)
+      );
+    }
+
+    if (!selectedVerbs || selectedVerbs.length === 0) {
+      selectedVerbs = (typeof VERB_CONJUGATION_DATA !== 'undefined') ? VERB_CONJUGATION_DATA.verbs : [];
+    }
+
+    conjugationEngine.startSession(selectedVerbs, formFilter);
+    launchStudyView(studyMode);
+    return;
+  }
+  isConjugationModeActive = false;
+
   let targetWords = [];
 
   if (currentLevel === 'CUSTOM') {
@@ -799,26 +940,41 @@ function startStudySession() {
     }
   }
 
+  // Fallback: auto select current level words if none selected
+  if (targetWords.length === 0) {
+    if (currentLevel === 'CUSTOM') {
+      targetWords = customWords.map(w => ({ word: w, lessonId: 'custom_lesson' }));
+    } else {
+      const levelData = VOCAB_DATA[currentLevel];
+      if (levelData && levelData.lessons) {
+        levelData.lessons.forEach(l => {
+          if (!selectedWordsMap[l.id]) selectedWordsMap[l.id] = new Set();
+          l.words.forEach((w, idx) => {
+            selectedWordsMap[l.id].add(idx);
+            targetWords.push({ word: w, lessonId: l.id });
+          });
+        });
+        saveSelectedWordsToSession();
+        renderLessons();
+      }
+    }
+  }
+
   if (targetWords.length === 0) {
     alert('Vui lòng chọn ít nhất 1 từ vựng hoặc 1 bài học để bắt đầu học!');
     return;
   }
 
-  const studyMode = document.getElementById('study-mode-select').value;
-
-  if (studyMode === 'new_lesson_pipeline') {
+  if (studyMode === 'new_lesson_pipeline' && !isRestart) {
     const unlearnedWords = targetWords.filter(item => {
       if (typeof srsEngine === 'undefined') return true;
       const state = srsEngine.getCardState(item.word, item.lessonId);
       return !state.graduated;
     });
 
-    if (unlearnedWords.length === 0) {
-      alert('🎉 Bạn đã tốt nghiệp tất cả các từ mới trong các bài đã chọn!\n\nHệ thống đã tự động bỏ qua các từ đã học để tránh học lặp lại.\nĐể ôn lại các từ này, hãy dùng nút "🔥 Ôn tập hôm nay" ở góc trên hoặc chọn các chế độ Luyện tập / Trắc nghiệm nhé.');
-      return;
+    if (unlearnedWords.length > 0) {
+      targetWords = unlearnedWords;
     }
-
-    targetWords = unlearnedWords;
   }
 
   studyEngine.startSession(targetWords, studyMode);
@@ -835,10 +991,26 @@ function launchStudyView(studyMode) {
   document.getElementById('mc-options-container').classList.add('hidden');
   document.getElementById('answer-section-inputs').classList.remove('hidden');
 
+  const revealedBox = document.getElementById('revealed-answer-box');
+  if (revealedBox) {
+    revealedBox.classList.remove('show');
+    document.getElementById('revealed-main').textContent = '';
+    document.getElementById('revealed-sub').textContent = '';
+  }
+
+  document.getElementById('btn-submit-answer')?.classList.remove('hidden');
+  document.getElementById('btn-show-answer')?.classList.remove('hidden');
+  document.getElementById('btn-next-word')?.classList.add('hidden');
+
   renderCurrentCard();
 }
 
 function renderCurrentCard() {
+  if (isConjugationModeActive) {
+    renderConjugationCard();
+    return;
+  }
+
   const word = studyEngine.getCurrentWord();
   const prompt = studyEngine.getPrompt();
   const progress = studyEngine.getProgress();
@@ -953,6 +1125,105 @@ function renderCurrentCard() {
   }
 }
 
+function renderConjugationCard() {
+  const q = conjugationEngine.getCurrentQuestion();
+  if (!q) {
+    renderConjugationSummary();
+    return;
+  }
+
+  const progressText = `Câu ${conjugationEngine.currentIndex + 1} / ${conjugationEngine.questions.length}`;
+  document.getElementById('study-progress-text').textContent = progressText;
+  document.getElementById('study-stage-text').textContent = `Thử thách chia động từ`;
+
+  const pct = Math.round(((conjugationEngine.currentIndex) / conjugationEngine.questions.length) * 100);
+  document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+
+  document.getElementById('pipeline-stepper').classList.add('hidden');
+
+  const badgeClass = q.verb.group === 1 ? 'badge-v1' : (q.verb.group === 2 ? 'badge-v2' : 'badge-v3');
+
+  document.getElementById('card-prompt-label').innerHTML = `CHIA ĐỘNG TỪ — <span class="${badgeClass}">NHÓM ${q.verb.group}</span>`;
+  document.getElementById('card-prompt-text').textContent = q.prompt;
+  document.getElementById('card-prompt-sub').textContent = `Động từ gốc: ${q.verb.kanji ? `${q.verb.kanji} (${q.verb.dictionary})` : q.verb.dictionary} — Nghĩa: ${q.verb.vietnamese}`;
+
+  document.getElementById('preview-section').classList.add('hidden');
+  const mcContainer = document.getElementById('mc-options-container');
+  const typingInputs = document.getElementById('answer-section-inputs');
+
+  const revealedBox = document.getElementById('revealed-answer-box');
+  revealedBox.classList.remove('show');
+  document.getElementById('revealed-main').textContent = '';
+  document.getElementById('revealed-sub').textContent = '';
+
+  if (q.isMultipleChoice) {
+    mcContainer.classList.remove('hidden');
+    typingInputs.classList.add('hidden');
+
+    mcContainer.innerHTML = [1, 2, 3].map(g => `
+      <button class="mc-option-btn" data-group="${g}">
+        Nhóm ${g} ${g === 1 ? '(V1: cột う)' : (g === 2 ? '(V2: cột え/い + る)' : '(V3: くる/する)')}
+      </button>
+    `).join('');
+
+    mcContainer.querySelectorAll('.mc-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const selectedGroup = parseInt(btn.dataset.group);
+        const result = conjugationEngine.checkAnswer(selectedGroup);
+
+        mcContainer.querySelectorAll('.mc-option-btn').forEach(b => {
+          b.disabled = true;
+          if (parseInt(b.dataset.group) === q.verb.group) {
+            b.classList.add('correct');
+          }
+        });
+
+        if (result.isCorrect) {
+          showFeedback('Chính xác! 🎉', true);
+        } else {
+          btn.classList.add('wrong');
+          showFeedback('Chưa chính xác! 💡', false);
+        }
+
+        setTimeout(() => {
+          handleNextWord();
+        }, 1100);
+      });
+    });
+  } else {
+    mcContainer.classList.add('hidden');
+    typingInputs.classList.remove('hidden');
+
+    const input = document.getElementById('study-answer-input');
+    const badge = document.getElementById('study-ime-badge');
+    input.value = '';
+    initImeBinding(input, badge);
+    input.placeholder = `Gõ đáp án tiếng Nhật cho ${q.targetForm.name}...`;
+
+    document.getElementById('btn-submit-answer').classList.remove('hidden');
+    document.getElementById('btn-show-answer').classList.remove('hidden');
+    document.getElementById('btn-next-word').classList.add('hidden');
+
+    input.focus();
+  }
+}
+
+function renderConjugationSummary() {
+  document.getElementById('pipeline-stepper').classList.add('hidden');
+  document.getElementById('preview-section').classList.add('hidden');
+  document.getElementById('mc-options-container').classList.add('hidden');
+  document.getElementById('answer-section-inputs').classList.add('hidden');
+  document.getElementById('study-summary-actions').classList.remove('hidden');
+
+  const total = conjugationEngine.questions.length;
+  const score = conjugationEngine.score;
+  const pct = Math.round((score / total) * 100);
+
+  document.getElementById('card-prompt-label').textContent = 'KẾT QUẢ CHIA ĐỘNG TỪ 🏆';
+  document.getElementById('card-prompt-text').textContent = `${score} / ${total} câu đúng`;
+  document.getElementById('card-prompt-sub').textContent = `Tỷ lệ chính xác: ${pct}% — Bạn đã nắm vững các quy tắc biến đổi thể!`;
+}
+
 function renderMultipleChoiceOptions(container) {
   const options = studyEngine.getMultipleChoiceOptions(getAllGlobalWords());
   container.innerHTML = options.map((opt, idx) => `
@@ -992,6 +1263,27 @@ function renderMultipleChoiceOptions(container) {
 }
 
 function handleAnswerSubmission() {
+  if (isConjugationModeActive) {
+    const input = document.getElementById('study-answer-input');
+    if (!input) return;
+    if (typeof convertRomajiSmart === 'function') {
+      input.value = convertRomajiSmart(input.value, currentImeMode, true);
+    }
+    const userAns = input.value;
+    if (!userAns.trim()) return;
+
+    const result = conjugationEngine.submitAnswer(userAns);
+    if (result.isCorrect) {
+      showFeedback('Chính xác! 🎉', true);
+      setTimeout(() => {
+        renderCurrentCard();
+      }, 900);
+    } else {
+      showFeedback('Chưa đúng! Thử lại hoặc nhấn "Xem đáp án" 💡', false);
+    }
+    return;
+  }
+
   const input = document.getElementById('study-answer-input');
   if (!input) return;
 
@@ -1026,6 +1318,24 @@ function showFeedback(msg, isSuccess) {
 }
 
 function handleShowAnswer() {
+  if (isConjugationModeActive) {
+    const q = conjugationEngine.getCurrentQuestion();
+    if (!q) return;
+
+    document.getElementById('revealed-main').textContent = q.expectedAnswer;
+    document.getElementById('revealed-sub').innerHTML = `<div class="rule-explanation-box">${q.explanation}</div>`;
+    document.getElementById('revealed-answer-box').classList.add('show');
+
+    if (q.expectedAnswer) {
+      speakJapanese(q.expectedAnswer);
+    }
+
+    document.getElementById('btn-submit-answer').classList.add('hidden');
+    document.getElementById('btn-show-answer').classList.add('hidden');
+    document.getElementById('btn-next-word').classList.remove('hidden');
+    return;
+  }
+
   const expected = studyEngine.getExpectedAnswer();
   if (!expected) return;
 
@@ -1041,6 +1351,15 @@ function handleShowAnswer() {
 }
 
 function handleNextWord() {
+  if (isConjugationModeActive) {
+    const hasMore = conjugationEngine.nextQuestion();
+    if (hasMore) {
+      renderCurrentCard();
+    } else {
+      renderConjugationSummary();
+    }
+    return;
+  }
   const hasMore = studyEngine.nextWord();
   if (hasMore) {
     renderCurrentCard();
@@ -1066,6 +1385,7 @@ function renderStudySummary() {
 }
 
 function exitStudySession() {
+  isConjugationModeActive = false;
   document.getElementById('study-view').classList.add('hidden');
   document.getElementById('lesson-picker-view').classList.remove('hidden');
   document.getElementById('answer-section-inputs').classList.remove('hidden');
@@ -1075,3 +1395,4 @@ function exitStudySession() {
   unbindIme(input);
   updateSrsHeaderBadges();
 }
+

@@ -32,6 +32,9 @@
       <button class="nav-btn btn-weak-header" id="btn-weak-words" title="Sổ các từ hay gõ sai hoặc khó">
         ⚠️ Tu luyện từ yếu <span class="badge-count" id="weak-words-badge">0</span>
       </button>
+      <button class="nav-btn" id="btn-open-conjugation-guide" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); border: 1px solid rgba(168, 85, 247, 0.4);">
+        ⚡ Biến đổi Động từ (S1-S4)
+      </button>
       <button class="nav-btn" id="btn-open-custom-modal">+ Thêm từ mới</button>
       <button class="nav-btn" id="btn-export-data" title="Tải về file data.js cập nhật để chia sẻ với bạn bè">📥 Xuất file data.js</button>
     </div>
@@ -63,6 +66,8 @@
           <label for="study-mode-select">Chế độ luyện tập:</label>
           <select id="study-mode-select" class="mode-select-dropdown">
             <option value="new_lesson_pipeline">✨ Học từ mới (Quy trình 4 bước - 7 từ/lượt)</option>
+            <option value="verb_conjugation">⚡ Luyện Chia Động Từ (Masu, Nai, Te, Ta, Ba, Ou...)</option>
+            <option value="verb_group_id">🎯 Nhận diện Nhóm Động Từ (Group 1/2/3)</option>
             <option value="jp_to_vn">🇯🇵 Gõ chữ: Tiếng Nhật ➔ Tiếng Việt</option>
             <option value="vn_to_jp">🇻🇳 Gõ chữ: Tiếng Việt ➔ Tiếng Nhật</option>
             <option value="mc_jp_to_vn">🧩 Trắc nghiệm: Tiếng Nhật ➔ Tiếng Việt</option>
@@ -249,15 +254,188 @@
     </div>
   </div>
 
+  <!-- MODAL: VERB CONJUGATION MATRIX & REFERENCE GUIDE (PDF 6_S_1 to 6_S_4) -->
+  <div class="modal-overlay" id="conjugation-matrix-modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">📖 Sổ Tay Biến Đổi Động Từ Tiếng Nhật (6_S_1 ➔ 6_S_4)</h3>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Quy tắc chia 3 Nhóm Động từ & Bảng tra cứu các thể (V-masu, V-nai, V-te, V-ta...)</span>
+        </div>
+        <button class="modal-close" id="conjugation-modal-close">&times;</button>
+      </div>
+
+      <!-- Modal Nav Tabs -->
+      <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm conj-tab-btn active" data-tab="tab-overview">📌 Tổng quan 3 Nhóm</button>
+        <button class="btn btn-secondary btn-sm conj-tab-btn" data-tab="tab-forms">🔄 Các dạng biến đổi</button>
+        <button class="btn btn-secondary btn-sm conj-tab-btn" data-tab="tab-nai">❌ Thể Phủ Định (V-nai)</button>
+        <button class="btn btn-secondary btn-sm conj-tab-btn" data-tab="tab-teta">⏳ Thể て & Thể た</button>
+        <button class="btn btn-secondary btn-sm conj-tab-btn" data-tab="tab-matrix">📊 Bảng tra cứu 24 Động từ</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 0.5rem;" id="conjugation-modal-body">
+        
+        <!-- TAB 1: OVERVIEW (PDF 6_S_2) -->
+        <div class="conj-tab-content" id="tab-overview">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Kết luận: Động từ trong Tiếng Nhật có 3 Nhóm</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+              <h5 style="color: #38bdf8; font-size: 1.1rem; margin-bottom: 0.5rem;">NHÓM 1 (V1)</h5>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Động từ có âm tận cùng thuộc cột <strong>う</strong> (う, く, ぐ, す, つ, ぬ, ぶ, む, る).</p>
+              <div style="font-size: 0.9rem; line-height: 1.6;" class="jp-text">
+                あらう (Rửa), ならう (Học), いく (Đi), かく (Viết), きく (Nghe), およぐ (Bơi), はなす (Nói), まつ (Chờ), あそぶ (Chơi), よむ (Đọc), のむ (Uống), つくる (Làm), もどる (Quay lại)
+              </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+              <h5 style="color: #34d399; font-size: 1.1rem; margin-bottom: 0.5rem;">NHÓM 2 (V2)</h5>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tận cùng bằng <strong>る</strong>, đứng trước る là âm cột <strong>え</strong> hoặc cột <strong>い</strong>.</p>
+              <div style="font-size: 0.9rem; line-height: 1.6;" class="jp-text">
+                たべる (Ăn), ねる (Ngủ), おしえる (Dạy), みる (Xem), おきる (Thức dậy)
+              </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+              <h5 style="color: #c084fc; font-size: 1.1rem; margin-bottom: 0.5rem;">NHÓM 3 (V3)</h5>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Động từ bất quy tắc chỉ có 2 động từ chính:</p>
+              <div style="font-size: 0.95rem; font-weight: 600; line-height: 1.8;" class="jp-text">
+                • くる (Đến)<br>
+                • する (Làm / Chơi)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: FORMS (PDF 6_S_1 & 6_S_2) -->
+        <div class="conj-tab-content hidden" id="tab-forms">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Các thể biến đổi trong Động từ tiếng Nhật (Mẫu Ví Dụ)</h4>
+          <div style="overflow-x: auto;">
+            <table class="conj-matrix-table">
+              <thead>
+                <tr>
+                  <th>Thể / Ý nghĩa</th>
+                  <th>G1 (Đi: いく)</th>
+                  <th>G1 (Nói: はなす)</th>
+                  <th>G2 (Ăn: たべる)</th>
+                  <th>G2 (Xem: みる)</th>
+                  <th>G3 (Đến: くる)</th>
+                  <th>G3 (Làm: する)</th>
+                </tr>
+              </thead>
+              <tbody class="jp-text">
+                <tr><td>Không ~ (Phủ định)</td><td>いかない</td><td>はなさない</td><td>たべない</td><td>みない</td><td>こない</td><td>しない</td></tr>
+                <tr><td>Lễ phép (V-masu)</td><td>いきます</td><td>はなします</td><td>たべます</td><td>みます</td><td>きます</td><td>します</td></tr>
+                <tr><td>Nguyên thể (Tự điển)</td><td>いく</td><td>はなす</td><td>たべる</td><td>みる</td><td>くる</td><td>する</td></tr>
+                <tr><td>Có thể ~ (Khả năng)</td><td>いける</td><td>はなせる</td><td>たべられる</td><td>みられる</td><td>こられる</td><td>できる</td></tr>
+                <tr><td>Nếu ~ (Điều kiện)</td><td>いけば</td><td>はなせば</td><td>たべれば</td><td>みれば</td><td>くれば</td><td>すれば</td></tr>
+                <tr><td>~ thôi (Ý chí)</td><td>いこう</td><td>はなそう</td><td>たべよう</td><td>みよう</td><td>こよう</td><td>しよう</td></tr>
+                <tr><td>Thể て</td><td>*いって</td><td>はなして</td><td>たべて</td><td>みて</td><td>きて</td><td>して</td></tr>
+                <tr><td>Đang ~ (V-te iru)</td><td>いっている</td><td>はなしている</td><td>たべている</td><td>みている</td><td>きている</td><td>している</td></tr>
+                <tr><td>Hãy ~ (V-te kudasai)</td><td>いってください</td><td>はなしてください</td><td>たべてください</td><td>みてください</td><td>きてください</td><td>してください</td></tr>
+                <tr><td>Thể た (Quá khứ)</td><td>*いった</td><td>はなした</td><td>たべた</td><td>みた</td><td>きた</td><td>した</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: NAI FORM (PDF 6_S_3) -->
+        <div class="conj-tab-content hidden" id="tab-nai">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Chia động từ sang Thể Phủ Định 【Vない】 (Không ~)</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+              <h5 style="color: #38bdf8;">Nhóm 1: Chuyển âm cột う ➔ cột あ + ない</h5>
+              <ul style="font-size: 0.85rem; line-height: 1.7; margin-top: 0.5rem;" class="jp-text">
+                <li>いく ➔ いかない | かく ➔ かかない</li>
+                <li>きく ➔ きかない | およぐ ➔ およがない</li>
+                <li>はなす ➔ はなさない | おす ➔ おさない</li>
+                <li>まつ ➔ またない | のむ ➔ のまない</li>
+                <li>よむ ➔ よまない | やすむ ➔ やすまない</li>
+                <li style="color: #f43f5e; font-weight: 600;">* Đặc biệt う ➔ わ: かう ➔ かわない, あう ➔ あわない</li>
+                <li style="color: #f43f5e; font-weight: 600;">* Đặc biệt ある ➔ ない</li>
+              </ul>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+              <h5 style="color: #34d399;">Nhóm 2: Bỏ る + ない</h5>
+              <ul style="font-size: 0.85rem; line-height: 1.7; margin-top: 0.5rem;" class="jp-text">
+                <li>たべる ➔ たべない</li>
+                <li>ねる ➔ ねない</li>
+                <li>いれる ➔ いれない</li>
+                <li>みる ➔ みない</li>
+                <li>おきる ➔ おきない</li>
+              </ul>
+              <h5 style="color: #c084fc; margin-top: 1rem;">Nhóm 3: Bất quy tắc</h5>
+              <ul style="font-size: 0.85rem; line-height: 1.7; margin-top: 0.5rem;" class="jp-text">
+                <li>くる ➔ こない</li>
+                <li>する ➔ しない</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: TE & TA FORM (PDF 6_S_4) -->
+        <div class="conj-tab-content hidden" id="tab-teta">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Chia động từ sang Thể Quá Khứ 【Vた】 & Thể て 【Vて】</h4>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px;">
+            <h5 style="color: #38bdf8; margin-bottom: 0.5rem;">Quy tắc nhóm 1 (V1):</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; font-size: 0.85rem;" class="jp-text">
+              <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                <strong>く ➔ いった / いって</strong><br>
+                きく ➔ きいた / きいて<br>
+                かく ➔ かいた / かいて<br>
+                <span style="color:#f43f5e;">* いく ➔ いった / いって</span>
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                <strong>ぐ ➔ いだ / いで</strong><br>
+                およぐ ➔ およいだ / およいで<br>
+                いそぐ ➔ いそいだ / いそいで
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                <strong>す ➔ した / して</strong><br>
+                はなす ➔ はなした / はなして<br>
+                おす ➔ おした / おして
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                <strong>う・つ・る ➔ った / って</strong><br>
+                かう ➔ かった / かって<br>
+                まつ ➔ まった / まって<br>
+                かえる ➔ かえった / かえって
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                <strong>む・ぶ・ぬ ➔ んだ / んで</strong><br>
+                のむ ➔ のんだ / のんで<br>
+                よぶ ➔ よんだ / よんで<br>
+                しぬ ➔ しんだ / しんで
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: MATRIX OF 24 VERBS -->
+        <div class="conj-tab-content hidden" id="tab-matrix">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Bảng Tra Cứu 24 Động Từ Bài 6</h4>
+          <div style="overflow-x: auto;" id="matrix-24-container">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
+        <button class="btn btn-secondary" id="conjugation-modal-done">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
-  <script src="js/data.js?v=1.4"></script>
-  <script src="js/srs.js?v=1.4"></script>
-  <script src="js/ime.js?v=1.4"></script>
-  <script src="js/study.js?v=1.4"></script>
-  <script src="js/app.js?v=1.4"></script>
+  <script src="js/data.js?v=1.5"></script>
+  <script src="js/srs.js?v=1.5"></script>
+  <script src="js/ime.js?v=1.5"></script>
+  <script src="js/study.js?v=1.5"></script>
+  <script src="js/conjugation.js?v=1.5"></script>
+  <script src="js/app.js?v=1.5"></script>
 
 </body>
 </html>
+
 
 </body>
 </html>

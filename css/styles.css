@@ -1074,4 +1074,77 @@ main.app-container {
   cursor: default;
 }
 
+/* --- VERB GROUP BADGES & CONJUGATION STYLING --- */
+.badge-v1 {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-v2 {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-v3 {
+  background: rgba(192, 132, 252, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.conj-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.conj-matrix-table th, .conj-matrix-table td {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--glass-border);
+  text-align: center;
+}
+
+.conj-matrix-table th {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.conj-tab-btn.active {
+  background: var(--accent-purple) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-purple) !important;
+}
+
+.rule-explanation-box {
+  background: rgba(168, 85, 247, 0.1);
+  border-left: 4px solid var(--accent-purple);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
+
 

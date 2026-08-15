@@ -399,6 +399,37 @@ const VOCAB_DATA = {
           { kanji: "", hiragana: "どうですか", vietnamese: "Như thế nào?" },
           { kanji: "", hiragana: "どんな ～ですか", vietnamese: "~ như thế nào?" }
         ]
+      },
+      {
+        id: "n5_b6",
+        title: "Bài 6: Động từ & Biến đổi thể Động từ",
+        description: "24 động từ cơ bản nhóm 1, 2, 3 và nền tảng biến đổi thể (V-masu, V-nai, V-te, V-ta...)",
+        words: [
+          { kanji: "洗う", hiragana: "あらう", vietnamese: "Rửa", group: 1 },
+          { kanji: "習う", hiragana: "ならう", vietnamese: "Học", group: 1 },
+          { kanji: "会う", hiragana: "あう", vietnamese: "Gặp", group: 1 },
+          { kanji: "買う", hiragana: "かう", vietnamese: "Mua", group: 1 },
+          { kanji: "行く", hiragana: "いく", vietnamese: "Đi", group: 1 },
+          { kanji: "書く", hiragana: "かく", vietnamese: "Viết", group: 1 },
+          { kanji: "聞く", hiragana: "きく", vietnamese: "Nghe", group: 1 },
+          { kanji: "泳ぐ", hiragana: "およぐ", vietnamese: "Bơi", group: 1 },
+          { kanji: "話す", hiragana: "はなす", vietnamese: "Nói chuyện", group: 1 },
+          { kanji: "待つ", hiragana: "まつ", vietnamese: "Chờ, đợi", group: 1 },
+          { kanji: "遊ぶ", hiragana: "あそぶ", vietnamese: "Chơi", group: 1 },
+          { kanji: "読む", hiragana: "よむ", vietnamese: "Đọc", group: 1 },
+          { kanji: "飲む", hiragana: "のむ", vietnamese: "Uống", group: 1 },
+          { kanji: "休む", hiragana: "やすむ", vietnamese: "Nghỉ ngơi", group: 1 },
+          { kanji: "作る", hiragana: "つくる", vietnamese: "Nấu ăn, làm ra", group: 1 },
+          { kanji: "帰る", hiragana: "かえる", vietnamese: "Về, quay về, trở về", group: 1 },
+          { kanji: "戻る", hiragana: "もどる", vietnamese: "Quay lại", group: 1 },
+          { kanji: "食べる", hiragana: "たべる", vietnamese: "Ăn", group: 2 },
+          { kanji: "寝る", hiragana: "ねる", vietnamese: "Ngủ", group: 2 },
+          { kanji: "教える", hiragana: "おしえる", vietnamese: "Chỉ, dạy", group: 2 },
+          { kanji: "見る", hiragana: "みる", vietnamese: "Xem, nhìn", group: 2 },
+          { kanji: "起きる", hiragana: "おきる", vietnamese: "Thức, ngủ dậy", group: 2 },
+          { kanji: "来る", hiragana: "くる", vietnamese: "Đến", group: 3 },
+          { kanji: "する", hiragana: "する", vietnamese: "Làm", group: 3 }
+        ]
       }
     ]
   },
@@ -470,3 +501,171 @@ const VOCAB_DATA = {
     ]
   }
 };
+
+const VERB_CONJUGATION_DATA = {
+  forms: [
+    { id: "group", name: "Xác định Nhóm Động Từ (Group 1 / 2 / 3)", suffix: "", example: "Nhóm 1" },
+    { id: "nai", name: "Phủ định (V-nai / Không ~)", suffix: "ない", example: "いかない" },
+    { id: "masu", name: "Lễ phép (V-masu)", suffix: "ます", example: "いきます" },
+    { id: "dictionary", name: "Nguyên thể (V-u / Thể từ điển)", suffix: "", example: "いく" },
+    { id: "potential", name: "Có thể ~ (Thể Khả năng)", suffix: "える/られる", example: "いける" },
+    { id: "ba", name: "Nếu ~ (Thể Điều kiện V-ba)", suffix: "えば/れば", example: "いけば" },
+    { id: "volitional", name: "~ thôi (Thể Ý chí V-ou)", suffix: "おう/よう", example: "いこう" },
+    { id: "te", name: "Thể て (V-te)", suffix: "て/で", example: "いって" },
+    { id: "te_iru", name: "Đang ~ (Thể V-te iru)", suffix: "ている", example: "いっている" },
+    { id: "te_kudasai", name: "Hãy ~ (Thể V-te kudasai)", suffix: "てください", example: "いってください" },
+    { id: "ta", name: "Thể た (Thể Quá khứ V-ta)", suffix: "た/だ", example: "いった" }
+  ],
+  verbs: [
+    // Group 1
+    {
+      dictionary: "いく", kanji: "行く", vietnamese: "Đi", group: 1,
+      forms: {
+        nai: "いかない", masu: "いきます", dictionary: "いく", potential: "いける", ba: "いけば", volitional: "いこう", te: "いって", te_iru: "いっている", te_kudasai: "いってください", ta: "いった"
+      },
+      note: "Ngoại lệ: Thể て/た của いく là いって / いった (không dùng いいて)."
+    },
+    {
+      dictionary: "はなす", kanji: "話す", vietnamese: "Nói chuyện", group: 1,
+      forms: {
+        nai: "はなさない", masu: "はなします", dictionary: "はなす", potential: "はなせる", ba: "はなせば", volitional: "はなそう", te: "はなして", te_iru: "はなしている", te_kudasai: "はなしてください", ta: "はなした"
+      }
+    },
+    {
+      dictionary: "あらう", kanji: "洗う", vietnamese: "Rửa", group: 1,
+      forms: {
+        nai: "あらわない", masu: "あらいます", dictionary: "あらう", potential: "あらえる", ba: "あらえば", volitional: "あらおう", te: "あらって", te_iru: "あらっている", te_kudasai: "あらってください", ta: "あらった"
+      },
+      note: "Động từ tận cùng う khi chia thể ない đổi う ➔ わ + ない (あらわない)."
+    },
+    {
+      dictionary: "ならう", kanji: "習う", vietnamese: "Học", group: 1,
+      forms: {
+        nai: "ならわない", masu: "ならいます", dictionary: "ならう", potential: "ならえる", ba: "ならえば", volitional: "ならおう", te: "ならって", te_iru: "ならっている", te_kudasai: "ならってください", ta: "ならった"
+      }
+    },
+    {
+      dictionary: "あう", kanji: "会う", vietnamese: "Gặp", group: 1,
+      forms: {
+        nai: "あわない", masu: "あいます", dictionary: "あう", potential: "あえる", ba: "あえば", volitional: "あおう", te: "あって", te_iru: "あっている", te_kudasai: "あってください", ta: "あった"
+      }
+    },
+    {
+      dictionary: "かう", kanji: "買う", vietnamese: "Mua", group: 1,
+      forms: {
+        nai: "かわない", masu: "かいます", dictionary: "かう", potential: "かえる", ba: "かえば", volitional: "かおう", te: "かって", te_iru: "かっている", te_kudasai: "かってください", ta: "かった"
+      }
+    },
+    {
+      dictionary: "かく", kanji: "書く", vietnamese: "Viết", group: 1,
+      forms: {
+        nai: "かかない", masu: "かきます", dictionary: "かく", potential: "かける", ba: "かけば", volitional: "かこう", te: "かいて", te_iru: "かいている", te_kudasai: "かいてください", ta: "かいた"
+      }
+    },
+    {
+      dictionary: "きく", kanji: "聞く", vietnamese: "Nghe", group: 1,
+      forms: {
+        nai: "きかない", masu: "ききます", dictionary: "きく", potential: "きける", ba: "きけば", volitional: "きこう", te: "きいて", te_iru: "きいている", te_kudasai: "きいてください", ta: "きいた"
+      }
+    },
+    {
+      dictionary: "およぐ", kanji: "泳ぐ", vietnamese: "Bơi", group: 1,
+      forms: {
+        nai: "およがない", masu: "およぎます", dictionary: "およぐ", potential: "およげる", ba: "およげば", volitional: "およごう", te: "およいで", te_iru: "およいでいる", te_kudasai: "およいでください", ta: "およいだ"
+      }
+    },
+    {
+      dictionary: "まつ", kanji: "待つ", vietnamese: "Chờ, đợi", group: 1,
+      forms: {
+        nai: "またない", masu: "まちます", dictionary: "まつ", potential: "まてる", ba: "まてば", volitional: "またろう", te: "まって", te_iru: "まっている", te_kudasai: "まってください", ta: "まった"
+      }
+    },
+    {
+      dictionary: "あそぶ", kanji: "遊ぶ", vietnamese: "Chơi", group: 1,
+      forms: {
+        nai: "あそばない", masu: "あそびます", dictionary: "あそぶ", potential: "あそべる", ba: "あそべば", volitional: "あそぼう", te: "あそんで", te_iru: "あそんでいる", te_kudasai: "あそんでください", ta: "あそんだ"
+      }
+    },
+    {
+      dictionary: "よむ", kanji: "読む", vietnamese: "Đọc", group: 1,
+      forms: {
+        nai: "よまない", masu: "よみます", dictionary: "よむ", potential: "よめる", ba: "よめば", volitional: "よもう", te: "よんで", te_iru: "よんでいる", te_kudasai: "よんでください", ta: "よんだ"
+      }
+    },
+    {
+      dictionary: "のむ", kanji: "飲む", vietnamese: "Uống", group: 1,
+      forms: {
+        nai: "のまない", masu: "のみます", dictionary: "のむ", potential: "のめる", ba: "のめば", volitional: "のもう", te: "のんで", te_iru: "のんでいる", te_kudasai: "のんでください", ta: "のんだ"
+      }
+    },
+    {
+      dictionary: "やすむ", kanji: "休む", vietnamese: "Nghỉ ngơi", group: 1,
+      forms: {
+        nai: "やすまない", masu: "やすみます", dictionary: "やすむ", potential: "やすめる", ba: "やすめば", volitional: "やすもう", te: "やすんで", te_iru: "やすんでいる", te_kudasai: "やすんでください", ta: "やすんだ"
+      }
+    },
+    {
+      dictionary: "つくる", kanji: "作る", vietnamese: "Nấu ăn, làm ra", group: 1,
+      forms: {
+        nai: "つくらない", masu: "つくります", dictionary: "つくる", potential: "つくれる", ba: "つければ", volitional: "つくろう", te: "つくって", te_iru: "つくっている", te_kudasai: "つくってください", ta: "つくった"
+      }
+    },
+    {
+      dictionary: "かえる", kanji: "帰る", vietnamese: "Về, quay về", group: 1,
+      forms: {
+        nai: "かえらない", masu: "かえります", dictionary: "かえる", potential: "かえれる", ba: "かえれば", volitional: "かえろう", te: "かえって", te_iru: "かえっている", te_kudasai: "かえってください", ta: "かえった"
+      }
+    },
+    {
+      dictionary: "もどる", kanji: "戻る", vietnamese: "Quay lại", group: 1,
+      forms: {
+        nai: "もどらない", masu: "もどります", dictionary: "もどる", potential: "もどれる", ba: "もどれば", volitional: "もどろう", te: "もどって", te_iru: "もどっている", te_kudasai: "もどってください", ta: "もどった"
+      }
+    },
+    // Group 2
+    {
+      dictionary: "たべる", kanji: "食べる", vietnamese: "Ăn", group: 2,
+      forms: {
+        nai: "たべない", masu: "たべます", dictionary: "たべる", potential: "たべられる", ba: "たべれば", volitional: "たべよう", te: "たべて", te_iru: "たべている", te_kudasai: "たべてください", ta: "たべた"
+      }
+    },
+    {
+      dictionary: "ねる", kanji: "寝る", vietnamese: "Ngủ", group: 2,
+      forms: {
+        nai: "ねない", masu: "ねます", dictionary: "ねる", potential: "ねられる", ba: "ねれば", volitional: "ねよう", te: "ねて", te_iru: "ねている", te_kudasai: "ねてください", ta: "ねた"
+      }
+    },
+    {
+      dictionary: "おしえる", kanji: "教える", vietnamese: "Chỉ, dạy", group: 2,
+      forms: {
+        nai: "おしえない", masu: "おしえます", dictionary: "おしえる", potential: "おしえられる", ba: "おしえれば", volitional: "おしえよう", te: "おしえて", te_iru: "おしえている", te_kudasai: "おしえてください", ta: "おしえた"
+      }
+    },
+    {
+      dictionary: "みる", kanji: "見る", vietnamese: "Xem, nhìn", group: 2,
+      forms: {
+        nai: "みない", masu: "みます", dictionary: "みる", potential: "みられる", ba: "みれば", volitional: "みよう", te: "みて", te_iru: "みている", te_kudasai: "みてください", ta: "みた"
+      }
+    },
+    {
+      dictionary: "おきる", kanji: "起きる", vietnamese: "Thức, ngủ dậy", group: 2,
+      forms: {
+        nai: "おきない", masu: "おきます", dictionary: "おきる", potential: "おきられる", ba: "おきれば", volitional: "おきよう", te: "おきて", te_iru: "おきている", te_kudasai: "おきてください", ta: "おきた"
+      }
+    },
+    // Group 3
+    {
+      dictionary: "くる", kanji: "来る", vietnamese: "Đến", group: 3,
+      forms: {
+        nai: "こない", masu: "きます", dictionary: "くる", potential: "こられる", ba: "くれば", volitional: "こよう", te: "きて", te_iru: "きている", te_kudasai: "きてください", ta: "きた"
+      }
+    },
+    {
+      dictionary: "する", kanji: "する", vietnamese: "Làm", group: 3,
+      forms: {
+        nai: "しない", masu: "します", dictionary: "する", potential: "できる", ba: "すれば", volitional: "しよう", te: "して", te_iru: "している", te_kudasai: "してください", ta: "した"
+      }
+    }
+  ]
+};
+
