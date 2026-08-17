@@ -509,7 +509,7 @@ const VERB_CONJUGATION_DATA = {
     { id: "masu", name: "Lễ phép (V-masu)", suffix: "ます", example: "いきます" },
     { id: "dictionary", name: "Nguyên thể (V-u / Thể từ điển)", suffix: "", example: "いく" },
     { id: "potential", name: "Có thể ~ (Thể Khả năng)", suffix: "える/られる", example: "いける" },
-    { id: "ba", name: "Nếu ~ (Thể Điều kiện V-ba)", suffix: "えば/れば", example: "いけば" },
+    { id: "ba", name: "Nếu ~", suffix: "えば/れば", example: "いけば" },
     { id: "volitional", name: "~ thôi (Thể Ý chí V-ou)", suffix: "おう/よう", example: "いこう" },
     { id: "te", name: "Thể て (V-te)", suffix: "て/で", example: "いって" },
     { id: "te_iru", name: "Đang ~ (Thể V-te iru)", suffix: "ている", example: "いっている" },

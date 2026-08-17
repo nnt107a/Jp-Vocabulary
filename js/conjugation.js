@@ -92,10 +92,12 @@ class ConjugationEngine {
       isCorrect = (normUser === normExpected);
     }
 
-    if (isCorrect && !this.isAnswerRevealed) {
-      this.score++;
+    if (isCorrect) {
+      if (!this.isAnswerRevealed) {
+        this.score++;
+      }
+      this.isAnswerRevealed = true;
     }
-    this.isAnswerRevealed = true;
 
     return {
       isCorrect: isCorrect,
