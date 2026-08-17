@@ -105,6 +105,10 @@ class ConjugationEngine {
     };
   }
 
+  submitAnswer(userAnswer) {
+    return this.checkAnswer(userAnswer);
+  }
+
   nextQuestion() {
     this.currentIndex++;
     this.isAnswerRevealed = false;

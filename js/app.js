@@ -571,7 +571,8 @@ function setupEventListeners() {
   // Enter Key Handler
   document.getElementById('study-answer-input')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      if (studyEngine.isAnswerRevealed) {
+      const isRevealed = isConjugationModeActive ? conjugationEngine.isAnswerRevealed : studyEngine.isAnswerRevealed;
+      if (isRevealed) {
         handleNextWord();
       } else {
         handleAnswerSubmission();
@@ -1272,11 +1273,11 @@ function handleAnswerSubmission() {
     const userAns = input.value;
     if (!userAns.trim()) return;
 
-    const result = conjugationEngine.submitAnswer(userAns);
+    const result = conjugationEngine.checkAnswer(userAns);
     if (result.isCorrect) {
       showFeedback('Chính xác! 🎉', true);
       setTimeout(() => {
-        renderCurrentCard();
+        handleNextWord();
       }, 900);
     } else {
       showFeedback('Chưa đúng! Thử lại hoặc nhấn "Xem đáp án" 💡', false);
@@ -1321,6 +1322,8 @@ function handleShowAnswer() {
   if (isConjugationModeActive) {
     const q = conjugationEngine.getCurrentQuestion();
     if (!q) return;
+
+    conjugationEngine.isAnswerRevealed = true;
 
     document.getElementById('revealed-main').textContent = q.expectedAnswer;
     document.getElementById('revealed-sub').innerHTML = `<div class="rule-explanation-box">${q.explanation}</div>`;
