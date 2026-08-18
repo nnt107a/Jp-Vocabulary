@@ -577,7 +577,7 @@ const VERB_CONJUGATION_DATA = {
     {
       dictionary: "まつ", kanji: "待つ", vietnamese: "Chờ, đợi", group: 1,
       forms: {
-        nai: "またない", masu: "まちます", dictionary: "まつ", potential: "まてる", ba: "まてば", volitional: "またろう", te: "まって", te_iru: "まっている", te_kudasai: "まってください", ta: "まった"
+        nai: "またない", masu: "まちます", dictionary: "まつ", potential: "まてる", ba: "まてば", volitional: "まとう", te: "まって", te_iru: "まっている", te_kudasai: "まってください", ta: "まった"
       }
     },
     {
@@ -607,7 +607,7 @@ const VERB_CONJUGATION_DATA = {
     {
       dictionary: "つくる", kanji: "作る", vietnamese: "Nấu ăn, làm ra", group: 1,
       forms: {
-        nai: "つくらない", masu: "つくります", dictionary: "つくる", potential: "つくれる", ba: "つければ", volitional: "つくろう", te: "つくって", te_iru: "つくっている", te_kudasai: "つくってください", ta: "つくった"
+        nai: "つくらない", masu: "つくります", dictionary: "つくる", potential: "つくれる", ba: "つくれば", volitional: "つくろう", te: "つくって", te_iru: "つくっている", te_kudasai: "つくってください", ta: "つくった"
       }
     },
     {
