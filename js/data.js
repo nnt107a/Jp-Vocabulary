@@ -505,16 +505,16 @@ const VOCAB_DATA = {
 const VERB_CONJUGATION_DATA = {
   forms: [
     { id: "group", name: "Xác định Nhóm Động Từ (Group 1 / 2 / 3)", suffix: "", example: "Nhóm 1" },
-    { id: "nai", name: "Phủ định (V-nai / Không ~)", suffix: "ない", example: "いかない" },
-    { id: "masu", name: "Lễ phép (V-masu)", suffix: "ます", example: "いきます" },
+    { id: "nai", name: "Phủ định (Không ~)", suffix: "ない", example: "いかない" },
+    { id: "masu", name: "Lễ phép", suffix: "ます", example: "いきます" },
     { id: "dictionary", name: "Nguyên thể (V-u / Thể từ điển)", suffix: "", example: "いく" },
     { id: "potential", name: "Có thể ~ (Thể Khả năng)", suffix: "える/られる", example: "いける" },
     { id: "ba", name: "Nếu ~", suffix: "えば/れば", example: "いけば" },
-    { id: "volitional", name: "~ thôi (Thể Ý chí V-ou)", suffix: "おう/よう", example: "いこう" },
-    { id: "te", name: "Thể て (V-te)", suffix: "て/で", example: "いって" },
-    { id: "te_iru", name: "Đang ~ (Thể V-te iru)", suffix: "ている", example: "いっている" },
-    { id: "te_kudasai", name: "Hãy ~ (Thể V-te kudasai)", suffix: "てください", example: "いってください" },
-    { id: "ta", name: "Thể た (Thể Quá khứ V-ta)", suffix: "た/だ", example: "いった" }
+    { id: "volitional", name: "~ thôi (Thể Ý chí)", suffix: "おう/よう", example: "いこう" },
+    { id: "te", name: "Thể て", suffix: "て/で", example: "いって" },
+    { id: "te_iru", name: "Đang ~", suffix: "ている", example: "いっている" },
+    { id: "te_kudasai", name: "Hãy ~", suffix: "てください", example: "いってください" },
+    { id: "ta", name: "Thể た (Thể Đã)", suffix: "た/だ", example: "いった" }
   ],
   verbs: [
     // Group 1
