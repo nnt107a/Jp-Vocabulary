@@ -26,6 +26,9 @@
     </div>
     <div class="nav-links">
       <button class="nav-btn active" id="nav-learn-btn">Học từ vựng</button>
+      <button class="nav-btn btn-grammar-header" id="btn-open-grammar-modal" style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2)); border: 1px solid rgba(56, 189, 248, 0.4);" title="Tra cứu Trợ từ & Nghi vấn từ từ tài liệu gốc">
+        📚 Sổ Tay Ngữ Pháp
+      </button>
       <button class="nav-btn btn-jlpt-header" id="btn-open-jlpt-modal" title="Luyện đề thi JLPT N5 chuẩn cấu trúc">
         🎯 Luyện Thi JLPT N5
       </button>
@@ -68,6 +71,13 @@
         <div class="mode-selector">
           <label for="study-mode-select">Chế độ luyện tập:</label>
           <select id="study-mode-select" class="mode-select-dropdown">
+            <optgroup label="📚 Luyện Ngữ Pháp (Trợ từ & Nghi vấn từ)">
+              <option value="grammar_particle_fill">📝 Điền Trợ Từ vào chỗ trống（　　）(50 câu)</option>
+              <option value="grammar_interrogative_fill">❓ Chọn Nghi Vấn Từ phù hợp（　　）(50 câu)</option>
+              <option value="grammar_sentence_translate">🔄 Dịch câu: Chọn câu JP chuẩn trợ từ (50 câu)</option>
+              <option value="grammar_error_correction">🔍 Tìm & Sửa lỗi trợ từ sai trong câu (50 câu)</option>
+              <option value="grammar_mixed_test">🏆 Thi thử Ngữ Pháp Tổng Hợp (Trộn 4 dạng)</option>
+            </optgroup>
             <optgroup label="✨ Học Từ Vựng Cơ Bản">
               <option value="new_lesson_pipeline">✨ Học từ mới (Quy trình 4 bước - 7 từ/lượt)</option>
               <option value="verb_conjugation">⚡ Luyện Chia Động Từ (Masu, Nai, Te, Ta, Ba, Ou...)</option>
@@ -543,15 +553,143 @@
     </div>
   </div>
 
+  <!-- MODAL: GRAMMAR HANDBOOK & PDF REFERENCE (Trợ từ & Nghi vấn từ) -->
+  <div class="modal-overlay" id="grammar-modal">
+    <div class="modal-content" style="max-width: 950px; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">📚 Sổ Tay Trợ Từ & Nghi Vấn Từ (Giáo trình Đông Du)</h3>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Tổng hợp lý thuyết từ 9 tài liệu gốc (Trang 80–91), tra cứu công thức, ví dụ âm thanh & luyện tập</span>
+        </div>
+        <button class="modal-close" id="grammar-modal-close">&times;</button>
+      </div>
+
+      <!-- Modal Nav Tabs -->
+      <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm grammar-tab-btn active" data-tab="tab-grammar-particles">📌 Bảng Trợ Từ (助詞)</button>
+        <button class="btn btn-secondary btn-sm grammar-tab-btn" data-tab="tab-grammar-interrogatives">❓ Bảng Nghi Vấn Từ (疑問詞)</button>
+        <button class="btn btn-secondary btn-sm grammar-tab-btn" data-tab="tab-grammar-pdf">📑 Đọc PDF Giáo Trình (1–9)</button>
+        <button class="btn btn-secondary btn-sm grammar-tab-btn" data-tab="tab-grammar-practice">🚀 Luyện Tập Trực Tiếp</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 0.5rem;" id="grammar-modal-body">
+        
+        <!-- TAB 1: PARTICLES -->
+        <div class="grammar-tab-content" id="tab-grammar-particles">
+          <div id="particles-list-container" class="grammar-items-list">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- TAB 2: INTERROGATIVES -->
+        <div class="grammar-tab-content hidden" id="tab-grammar-interrogatives">
+          <div id="interrogatives-list-container" class="grammar-items-list">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- TAB 3: PDF VIEWER -->
+        <div class="grammar-tab-content hidden" id="tab-grammar-pdf">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Chọn bài học (1–9):</span>
+            <div id="grammar-pdf-selector-pills" style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm pdf-pill-btn active" data-pdf="1.pdf">1.pdf (Trang 80: に/へ/を)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="2.pdf">2.pdf (Trang 81: と/で/に/も/から-まで)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="3.pdf">3.pdf (Trang 82: Bảng Nghi Vấn Từ)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="4.pdf">4.pdf (Trang 83: なにで/どこで/どのくらい)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="5.pdf">5.pdf (Trang 87: Bài 8 - Mẫu câu & へ)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="6.pdf">6.pdf (Trang 88: Bài 8 - に & を)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="7.pdf">7.pdf (Trang 89: Bài 8 - なにを & で nơi chốn)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="8.pdf">8.pdf (Trang 90: Bài 8 - で phương tiện & と)</button>
+              <button class="btn btn-secondary btn-sm pdf-pill-btn" data-pdf="9.pdf">9.pdf (Trang 91: Bài 8 - だれと & ひとりで)</button>
+            </div>
+          </div>
+          <div class="grammar-pdf-frame-wrapper" style="border: 1px solid var(--glass-border); border-radius: 12px; height: 600px; overflow: hidden; background: #18181b;">
+            <iframe id="grammar-pdf-iframe" data-src="public/Grammar/1.pdf" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+          </div>
+        </div>
+
+        <!-- TAB 4: PRACTICE DASHBOARD -->
+        <div class="grammar-tab-content hidden" id="tab-grammar-practice">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            
+            <div class="grammar-mode-card" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.4); padding: 1.25rem; border-radius: 12px; cursor: pointer;" data-grammar-mode="grammar_particle_fill">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: #38bdf8; font-size: 1.1rem; margin: 0;">📝 Điền Trợ Từ （　　）</h4>
+                <span class="jlpt-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">50 Câu</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Phân biệt và điền chuẩn xác các trợ từ (は, が, を, に, へ, で, と, も, から, まで) theo ngữ cảnh câu.
+              </p>
+              <button class="btn btn-primary btn-sm btn-quick-grammar" data-grammar-mode="grammar_particle_fill" style="width: 100%;">Luyện ngay ➔</button>
+            </div>
+
+            <div class="grammar-mode-card" style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.4); padding: 1.25rem; border-radius: 12px; cursor: pointer;" data-grammar-mode="grammar_interrogative_fill">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: #c084fc; font-size: 1.1rem; margin: 0;">❓ Chọn Nghi Vấn Từ</h4>
+                <span class="jlpt-badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">50 Câu</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Luyện chọn đúng từ để hỏi (どこ, なに, だれ, いつ, なんじ, どのくらい, どんな, どちら) dựa theo câu trả lời.
+              </p>
+              <button class="btn btn-primary btn-sm btn-quick-grammar" data-grammar-mode="grammar_interrogative_fill" style="width: 100%;">Luyện ngay ➔</button>
+            </div>
+
+            <div class="grammar-mode-card" style="background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.4); padding: 1.25rem; border-radius: 12px; cursor: pointer;" data-grammar-mode="grammar_sentence_translate">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: #34d399; font-size: 1.1rem; margin: 0;">🔄 Dịch Câu Chuẩn Trợ Từ</h4>
+                <span class="jlpt-badge" style="background: rgba(52, 211, 153, 0.2); color: #34d399;">50 Câu</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Đọc câu tiếng Việt và chọn câu tiếng Nhật có cấu trúc và trợ từ chính xác 100%.
+              </p>
+              <button class="btn btn-primary btn-sm btn-quick-grammar" data-grammar-mode="grammar_sentence_translate" style="width: 100%;">Luyện ngay ➔</button>
+            </div>
+
+            <div class="grammar-mode-card" style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.4); padding: 1.25rem; border-radius: 12px; cursor: pointer;" data-grammar-mode="grammar_error_correction">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: #f43f5e; font-size: 1.1rem; margin: 0;">🔍 Tìm & Sửa Lỗi Sai Trợ Từ</h4>
+                <span class="jlpt-badge" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e;">50 Câu</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Phát hiện trợ từ dùng sai trong câu và chọn trợ từ sửa lại cho chuẩn mực ngữ pháp.
+              </p>
+              <button class="btn btn-primary btn-sm btn-quick-grammar" data-grammar-mode="grammar_error_correction" style="width: 100%;">Luyện ngay ➔</button>
+            </div>
+
+            <div class="grammar-mode-card" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.4); padding: 1.25rem; border-radius: 12px; cursor: pointer; grid-column: 1 / -1;" data-grammar-mode="grammar_mixed_test">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: #fbbf24; font-size: 1.15rem; margin: 0;">🏆 Thi Thử Ngữ Pháp Tổng Hợp (Trộn 4 Dạng)</h4>
+                <span class="jlpt-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">20 Phút • 25 Câu</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Đề thi tổng hợp trộn ngẫu nhiên từ cả 4 dạng bài tập (Điền trợ từ, Nghi vấn từ, Dịch câu, Sửa lỗi) với xếp hạng S/A/B/C.
+              </p>
+              <button class="btn btn-primary btn-sm btn-quick-grammar" data-grammar-mode="grammar_mixed_test" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #ec4899);">🚀 Bắt đầu thi thử ngữ pháp</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 0.5rem;">
+        <button class="btn btn-secondary" id="grammar-modal-done">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
-  <script src="js/data.js?v=1.6"></script>
-  <script src="js/jlpt_data.js?v=1.6"></script>
-  <script src="js/srs.js?v=1.6"></script>
-  <script src="js/ime.js?v=1.6"></script>
-  <script src="js/study.js?v=1.6"></script>
-  <script src="js/conjugation.js?v=1.6"></script>
-  <script src="js/jlpt_engine.js?v=1.6"></script>
-  <script src="js/app.js?v=1.6"></script>
+  <script src="js/data.js?v=1.8"></script>
+  <script src="js/jlpt_data.js?v=1.8"></script>
+  <script src="js/grammar_data.js?v=1.8"></script>
+  <script src="js/srs.js?v=1.8"></script>
+  <script src="js/ime.js?v=1.8"></script>
+  <script src="js/study.js?v=1.8"></script>
+  <script src="js/conjugation.js?v=1.8"></script>
+  <script src="js/jlpt_engine.js?v=1.8"></script>
+  <script src="js/grammar_engine.js?v=1.8"></script>
+  <script src="js/app.js?v=1.8"></script>
 
 </body>
 </html>

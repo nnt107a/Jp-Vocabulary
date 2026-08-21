@@ -1348,5 +1348,146 @@ main.app-container {
 .rank-B { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; }
 .rank-C { background: linear-gradient(135deg, #64748b, #475569); color: #ffffff; }
 
+/* ====================================================
+   GRAMMAR HANDBOOK & PRACTICE UI STYLES
+   ==================================================== */
+.btn-grammar-header {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+  font-weight: 600;
+}
+
+.btn-grammar-header:hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.grammar-tab-btn.active {
+  background: var(--gradient-primary) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+.grammar-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.grammar-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: var(--transition-normal);
+  backdrop-filter: blur(8px);
+}
+
+.grammar-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.grammar-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.grammar-particle-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 0.8rem;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.grammar-usage-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.grammar-usage-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent-cyan);
+  margin-bottom: 0.35rem;
+}
+
+.grammar-formula-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed var(--glass-border);
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: #fbbf24;
+  margin: 0.35rem 0 0.6rem 0;
+}
+
+.grammar-example-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.grammar-example-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.grammar-highlight {
+  color: #f43f5e;
+  font-weight: 700;
+  background: rgba(244, 63, 94, 0.15);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.grammar-audio-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.grammar-audio-btn:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  transform: scale(1.15);
+}
+
+.pdf-pill-btn.active {
+  background: linear-gradient(135deg, #38bdf8, #818cf8) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+
 
 
