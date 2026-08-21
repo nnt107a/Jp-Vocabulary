@@ -950,6 +950,18 @@ let isJLPTModeActive = false;
 let isGrammarModeActive = false;
 let jlptTimerInterval = null;
 let jlptArrangementState = { slots: [], placedChips: [] };
+let studyAdvanceTimeout = null;
+
+function scheduleNextWord(delay = 1200) {
+  if (studyAdvanceTimeout) {
+    clearTimeout(studyAdvanceTimeout);
+    studyAdvanceTimeout = null;
+  }
+  studyAdvanceTimeout = setTimeout(() => {
+    studyAdvanceTimeout = null;
+    handleNextWord();
+  }, delay);
+}
 
 /* Study Session Controller */
 function startStudySession(isRestart = false) {
@@ -1312,9 +1324,7 @@ function renderConjugationCard() {
           showFeedback('Chưa chính xác! 💡', false);
         }
 
-        setTimeout(() => {
-          handleNextWord();
-        }, 1100);
+        scheduleNextWord(result.isCorrect ? 1100 : 1800);
       });
     });
   } else {
@@ -1382,9 +1392,7 @@ function renderMultipleChoiceOptions(container) {
         srsEngine.recordReview(studyEngine.getCurrentWord(), studyEngine.getCurrentLessonId(), isCorrect);
       }
 
-      setTimeout(() => {
-        handleNextWord();
-      }, 1100);
+      scheduleNextWord(isCorrect ? 1100 : 1800);
     });
   });
 }
@@ -1520,6 +1528,11 @@ function handleShowAnswer() {
 }
 
 function handleNextWord() {
+  if (studyAdvanceTimeout) {
+    clearTimeout(studyAdvanceTimeout);
+    studyAdvanceTimeout = null;
+  }
+
   if (isGrammarModeActive) {
     grammarEngine.nextQuestion();
     if (!grammarEngine.isFinished()) {
@@ -1572,6 +1585,10 @@ function renderStudySummary() {
 }
 
 function exitStudySession() {
+  if (studyAdvanceTimeout) {
+    clearTimeout(studyAdvanceTimeout);
+    studyAdvanceTimeout = null;
+  }
   isGrammarModeActive = false;
   isJLPTModeActive = false;
   isConjugationModeActive = false;
@@ -1786,11 +1803,7 @@ function renderJlptMultipleChoice(q, container) {
       document.getElementById('btn-show-answer').classList.add('hidden');
       document.getElementById('btn-next-word').classList.remove('hidden');
 
-      setTimeout(() => {
-        if (isCorrect) {
-          handleNextWord();
-        }
-      }, 1400);
+      scheduleNextWord(isCorrect ? 1300 : 2200);
     });
   });
 }
@@ -1897,16 +1910,13 @@ function checkIfAllSlotsFilled(q) {
 
   if (result.isCorrect) {
     showFeedback('Chính xác 100%! ⭐ 🎉', true);
-    setTimeout(() => {
-      handleNextWord();
-    }, 1500);
+    scheduleNextWord(1500);
   } else if (result.details && result.details.isStarCorrect) {
     showFeedback('Đúng vị trí sao ★! 🎉', true);
-    setTimeout(() => {
-      handleNextWord();
-    }, 1500);
+    scheduleNextWord(1800);
   } else {
     showFeedback('Chưa chính xác! Xem câu mẫu bên dưới 💡', false);
+    scheduleNextWord(2500);
   }
 }
 
@@ -2172,11 +2182,7 @@ function renderGrammarCard() {
       document.getElementById('btn-show-answer').classList.add('hidden');
       document.getElementById('btn-next-word').classList.remove('hidden');
 
-      setTimeout(() => {
-        if (isCorrect) {
-          handleNextWord();
-        }
-      }, 1300);
+      scheduleNextWord(isCorrect ? 1300 : 2200);
     });
   });
 }
